@@ -6,115 +6,666 @@
   <title>FE Stat Growth Simulator</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    @keyframes levelUpGlow { 0% { background: rgba(34,197,94,.45); } 100% { background: transparent; } }
-    .level-up-flash { animation: levelUpGlow .8s ease-out; }
-    .gain-pop { animation: gainPop 1s ease-out forwards; }
-    @keyframes gainPop { 0% { opacity: 0; transform: translateY(5px); } 20% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-8px); } }
-    .label { display:block; margin-bottom:.25rem; font-size:.7rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#94a3b8; }
-    .input,.num { border:1px solid #475569; border-radius:.375rem; background:#334155; color:white; padding:.5rem .65rem; outline:none; }
-    .input { width:100%; }
-    .input:focus,.num:focus { border-color:#fbbf24; box-shadow:0 0 0 2px rgba(251,191,36,.15); }
-    .num { width:4.5rem; text-align:center; }
-    .portrait-bg { background:linear-gradient(135deg,rgba(245,158,11,.2),#0f172a); }
+    :root {
+      --bg-1: #060d1a;
+      --bg-2: #0d1728;
+      --panel: rgba(10, 20, 34, 0.78);
+      --panel-strong: rgba(11, 21, 35, 0.92);
+      --border: #d9b65b;
+      --gold: #f3d77a;
+      --gold-soft: #c4922c;
+      --ink: #0a1020;
+      --blue: #47618d;
+      --blue-2: #3f577d;
+      --text: #edf4ff;
+      --muted: #b6c5dd;
+      --green: #59e36d;
+      --green-2: #2ecb55;
+      --red: #ff5a6b;
+      --shadow: rgba(0,0,0,.45);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top, rgba(77,97,132,.3), transparent 38%),
+        linear-gradient(180deg, var(--bg-2), var(--bg-1) 48%, #02070d);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      letter-spacing: 0.02em;
+      padding: 24px;
+    }
+
+    .frame {
+      position: relative;
+      max-width: 1280px;
+      margin: 0 auto;
+      border: 3px solid var(--gold);
+      border-radius: 10px;
+      background: linear-gradient(180deg, rgba(13,23,35,.95), rgba(7,14,24,.96));
+      box-shadow: 0 0 0 3px rgba(17,26,38,.9), 0 18px 50px rgba(0,0,0,.5);
+      overflow: hidden;
+    }
+
+    .frame::before, .frame::after {
+      content: "";
+      position: absolute;
+      inset: 8px 10px auto 10px;
+      height: 10px;
+      background: linear-gradient(90deg, rgba(255,255,255,.04), rgba(243,215,122,.38), rgba(255,255,255,.02));
+      pointer-events: none;
+    }
+
+    .hud {
+      position: relative;
+      padding: 18px 18px 12px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1.3fr 0.7fr;
+      align-items: center;
+      gap: 16px;
+      background: linear-gradient(180deg, rgba(90, 21, 30, 0.9), rgba(48, 11, 18, 0.95));
+      border: 3px solid var(--gold);
+      border-radius: 10px;
+      padding: 16px 18px;
+      min-height: 92px;
+      box-shadow: inset 0 0 20px rgba(0,0,0,.22);
+    }
+
+    .character-name {
+      font-size: clamp(2rem, 3vw, 3.5rem);
+      font-weight: 800;
+      line-height: 1;
+      color: #f7f0ff;
+      font-family: Georgia, 'Times New Roman', serif;
+      letter-spacing: 0.04em;
+      text-shadow: 0 0 10px rgba(0,0,0,.35);
+    }
+
+    .level-box {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      min-height: 60px;
+      font-size: clamp(1.8rem, 2.2vw, 3rem);
+      font-weight: 800;
+      color: var(--gold);
+      font-family: Georgia, serif;
+      text-shadow: 0 0 12px rgba(243,215,122,.4);
+      letter-spacing: 0.04em;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.6fr 0.9fr;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .panel {
+      background: linear-gradient(180deg, rgba(17, 31, 53, 0.96), rgba(11, 20, 32, 0.96));
+      border: 3px solid var(--gold);
+      border-radius: 10px;
+      box-shadow: inset 0 0 25px rgba(0,0,0,.2);
+    }
+
+    .stats-panel {
+      padding: 16px;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(180px, 1fr));
+      gap: 14px 18px;
+    }
+
+    .stat-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 64px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(22,38,63,.8), rgba(15,27,42,.8));
+      border: 1px solid rgba(243,215,122,.34);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.07);
+    }
+
+    .stat-label {
+      color: var(--gold);
+      font-weight: 800;
+      font-size: clamp(1.2rem, 1.8vw, 2rem);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: Georgia, serif;
+      text-shadow: 0 0 8px rgba(243,215,122,.12);
+    }
+
+    .stat-value {
+      color: var(--text);
+      font-size: clamp(1.25rem, 1.6vw, 2rem);
+      font-weight: 800;
+      font-family: Arial, Helvetica, sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .gain-badge {
+      color: var(--green);
+      font-weight: 900;
+      font-size: 1.2rem;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+
+    .gain-badge.show {
+      opacity: 1;
+      transform: translateY(0);
+      animation: gainPop .8s ease-out forwards;
+    }
+
+    @keyframes gainPop {
+      0% { opacity: 0; transform: translateY(8px) scale(.8); }
+      18% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-12px) scale(1); }
+    }
+
+    .portrait-panel {
+      overflow: hidden;
+      position: relative;
+      min-height: 420px;
+      background: linear-gradient(180deg, rgba(12,20,32,.7), rgba(12,25,34,.88));
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .portrait-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 15%, rgba(164,205,255,.15), rgba(0,0,0,0) 32%);
+      pointer-events: none;
+    }
+
+    .portrait-figure {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(6rem, 12vw, 14rem);
+      filter: drop-shadow(0 18px 16px rgba(0,0,0,.35));
+      user-select: none;
+      position: relative;
+      z-index: 1;
+      text-shadow: 0 0 30px rgba(65,120,255,.32);
+    }
+
+    .portrait-figure img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.92;
+      filter: saturate(1.06) contrast(1.04);
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 16px 18px 18px;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 18px;
+      background: rgba(10, 18, 30, 0.7);
+      border: 2px solid rgba(243,215,122,.25);
+      border-radius: 10px;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn {
+      appearance: none;
+      border: none;
+      border-radius: 8px;
+      font-weight: 800;
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: transform 0.12s ease, filter 0.12s ease;
+      color: #f5f7ff;
+      background: #2b3d5f;
+      border: 1px solid rgba(243,215,122,.3);
+    }
+
+    .btn:hover { filter: brightness(1.08); }
+    .btn:active { transform: translateY(1px); }
+
+    .btn-gold { background: linear-gradient(180deg, #f2d77f, #d9a53a); color: #101826; }
+    .btn-green { background: linear-gradient(180deg, #2ac76b, #1f9d54); }
+    .btn-blue { background: linear-gradient(180deg, #4e6ab8, #33519a); }
+    .btn-slate { background: linear-gradient(180deg, #4e5d76, #37465f); }
+    .btn-red { background: linear-gradient(180deg, #d65262, #b63544); }
+
+    .field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .field input,
+    .field select {
+      width: 4.75rem;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(243,215,122,.3);
+      background: rgba(17, 30, 47, 0.9);
+      color: white;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .settings {
+      margin-top: 18px;
+      background: rgba(10, 18, 30, 0.7);
+      border: 2px solid rgba(243,215,122,.25);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .settings-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      cursor: pointer;
+      user-select: none;
+      background: rgba(17, 28, 42, 0.6);
+      border-bottom: 1px solid rgba(243,215,122,.2);
+      font-weight: 800;
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.8rem;
+    }
+
+    .settings-body {
+      display: none;
+      padding: 16px;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      align-items: start;
+    }
+
+    .settings.open .settings-body { display: grid; }
+
+    .check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: rgba(16, 27, 40, 0.7);
+      border: 1px solid rgba(243,215,122,.2);
+      color: var(--text);
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
+    .check input { accent-color: #f4d97a; }
+
+    .select-wrap {
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: rgba(16, 27, 40, 0.7);
+      border: 1px solid rgba(243,215,122,.2);
+    }
+
+    .select-wrap label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .select-wrap select {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(243,215,122,.3);
+      background: rgba(17, 30, 47, 0.9);
+      color: white;
+      font-weight: 700;
+    }
+
+    .subgrid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .output-panel, .history-panel, .compare-panel {
+      padding: 16px;
+    }
+
+    .panel-title {
+      font-size: 1rem;
+      font-weight: 900;
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin: 0 0 12px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 170px;
+      resize: none;
+      border-radius: 8px;
+      border: 1px solid rgba(243,215,122,.25);
+      background: rgba(10, 18, 30, 0.9);
+      color: #acffbf;
+      padding: 12px;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 0.85rem;
+    }
+
+    .history-wrap {
+      max-height: 200px;
+      overflow: auto;
+      display: grid;
+      gap: 8px;
+    }
+
+    .history-item {
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: rgba(17, 28, 42, 0.7);
+      border: 1px solid rgba(243,215,122,.18);
+    }
+
+    .history-item strong { color: var(--gold); }
+
+    .compare-wrap table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    .compare-wrap th, .compare-wrap td {
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(243,215,122,.15);
+      text-align: center;
+    }
+
+    .compare-wrap th:first-child, .compare-wrap td:first-child { text-align: left; }
+
+    .file-panel {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 16px;
+      background: rgba(10, 18, 30, 0.7);
+      border: 2px solid rgba(243,215,122,.25);
+      border-radius: 10px;
+      align-items: center;
+    }
+
+    .file-panel .btn { padding: 10px 14px; }
+
+    label.file-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(243,215,122,.3);
+      background: linear-gradient(180deg, #4e5d76, #37465f);
+      color: white;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .file-button input { display: none; }
+
+    .level-popup {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(3,7,14,.6);
+      z-index: 99;
+      backdrop-filter: blur(2px);
+    }
+
+    .level-popup.show { display: flex; }
+
+    .popup-card {
+      width: min(700px, 90vw);
+      background: linear-gradient(180deg, rgba(20, 31, 45, 0.98), rgba(14, 22, 30, 0.98));
+      border: 3px solid var(--gold);
+      border-radius: 14px;
+      box-shadow: 0 18px 40px rgba(0,0,0,.5);
+      padding: 18px 20px 16px;
+      text-align: center;
+    }
+
+    .popup-tag {
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      font-size: 0.9rem;
+      font-weight: 900;
+    }
+
+    .popup-level {
+      margin-top: 8px;
+      font-size: clamp(2rem, 5vw, 4rem);
+      color: var(--gold);
+      font-family: Georgia, serif;
+      font-weight: 900;
+    }
+
+    .popup-gains {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 18px;
+      min-height: 56px;
+      align-items: center;
+    }
+
+    .popup-gain {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(40, 115, 70, 0.18);
+      border: 1px solid rgba(89,227,109,.7);
+      color: #bafec7;
+      font-weight: 800;
+      font-size: 0.95rem;
+    }
+
+    .popup-btn {
+      margin-top: 18px;
+      padding: 12px 28px;
+      border-radius: 8px;
+      border: none;
+      background: linear-gradient(180deg, #f2d77f, #d9a53a);
+      color: #101826;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    @media (max-width: 900px) {
+      .main-grid, .subgrid { grid-template-columns: 1fr; }
+      .portrait-panel { min-height: 260px; }
+    }
+
+    @media (max-width: 640px) {
+      body { padding: 12px; }
+      .topbar { grid-template-columns: 1fr; }
+      .stat-grid { grid-template-columns: 1fr; }
+      .controls { flex-direction: column; align-items: stretch; }
+      .button-row { width: 100%; }
+      .button-row .btn { flex: 1; }
+      .field { width: 100%; justify-content: space-between; }
+      .field input { width: 72px; }
+    }
   </style>
 </head>
-<body class="min-h-screen bg-slate-900 px-4 py-8 font-sans text-slate-100">
-  <main class="mx-auto w-full max-w-6xl rounded-xl border border-slate-700 bg-slate-800 p-5 shadow-2xl md:p-6">
-    <header class="mb-6 border-b border-slate-700 pb-4 text-center">
-      <h1 class="text-3xl font-extrabold tracking-wide text-amber-400">🛡️ FE STAT GROWTH SIMULATOR</h1>
-      <p class="mt-1 text-sm text-slate-400">Set your character up, level up, and copy the result into Discord.</p>
-    </header>
-
-    <section class="mb-6 grid gap-5 rounded-lg border border-slate-700 bg-slate-900/40 p-4 md:grid-cols-[150px_1fr]">
-      <div class="flex flex-col items-center">
-        <div id="portrait" class="portrait-bg flex h-32 w-32 items-center justify-center overflow-hidden rounded-lg border-2 border-amber-500/60 text-5xl">🧙</div>
-        <label for="portraitInput" class="mt-2 cursor-pointer text-xs font-bold text-amber-300 hover:text-amber-200">Upload Portrait</label>
-        <input id="portraitInput" type="file" accept="image/*" class="hidden" />
-        <button id="removePortrait" class="mt-1 hidden text-xs text-red-400 hover:text-red-300">Remove Portrait</button>
+<body>
+  <div class="frame">
+    <div class="hud">
+      <div class="topbar">
+        <div class="character-name" id="heroName">Lord</div>
+        <div class="level-box">Lv <span id="level">1</span></div>
       </div>
 
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <label><span class="label">Title / Role</span><input id="title" value="Lord" class="input" /></label>
-        <label><span class="label">Character Name</span><input id="name" value="Eve" class="input" /></label>
-        <label><span class="label">Game Preset</span><select id="game" class="input"><option value="generic">Generic</option><option value="fe7">FE7 style</option><option value="fe8">FE8 style</option><option value="fe13">Awakening style</option><option value="fe14">Fates style</option><option value="fe16">Three Houses style</option></select></label>
-        <label><span class="label">Class</span><select id="class" class="input"><option value="custom">Custom</option><option>Lord</option><option>Cavalier</option><option>Knight</option><option>Mage</option><option>Myrmidon</option><option>Thief</option><option>Cleric</option><option>Archer</option></select></label>
-        <div class="flex flex-wrap gap-2 sm:col-span-2 lg:col-span-4">
-          <button id="apply" class="rounded-lg bg-indigo-600 px-4 py-2 font-bold hover:bg-indigo-500">Apply Class Growths</button>
-          <button id="sound" class="rounded-lg bg-slate-700 px-4 py-2 font-bold hover:bg-slate-600">🔊 Sound On</button>
+      <div class="main-grid">
+        <div class="panel stats-panel">
+          <div id="statGrid" class="stat-grid"></div>
+        </div>
+
+        <div class="panel portrait-panel">
+          <div id="portrait" class="portrait-figure">🧙</div>
         </div>
       </div>
-    </section>
 
-    <section class="mb-6 rounded-lg border border-slate-700 bg-slate-900/40 p-4">
-      <div class="flex items-center justify-between gap-3">
-        <h2 class="text-lg font-bold text-amber-300">Advanced Settings</h2>
-        <button id="toggleSettings" type="button" class="rounded bg-slate-700 px-3 py-1 text-sm font-bold hover:bg-slate-600">Show</button>
+      <div class="controls">
+        <div class="button-row">
+          <button id="levelUp" class="btn btn-gold">Level Up</button>
+          <button id="simulate" class="btn btn-green">Simulate</button>
+          <button id="apply" class="btn btn-blue">Apply Growths</button>
+          <button id="reset" class="btn btn-slate">Reset</button>
+        </div>
+
+        <div class="button-row">
+          <label class="field">
+            <span>Levels</span>
+            <input id="amount" type="number" min="1" value="1" />
+          </label>
+          <button id="soundToggle" class="btn btn-slate">🔊 Sound</button>
+        </div>
       </div>
 
-      <div id="settingsPanel" class="mt-3 hidden grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <label class="flex items-center gap-2 rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm"><input id="settingStatCaps" type="checkbox" class="h-4 w-4" /> Enable stat caps</label>
-        <label class="flex items-center gap-2 rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm"><input id="settingClassGrowths" type="checkbox" checked class="h-4 w-4" /> Enable class growths</label>
-        <label class="flex items-center gap-2 rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm"><input id="settingExpectedValues" type="checkbox" checked class="h-4 w-4" /> Show expected values</label>
-        <label class="flex items-center gap-2 rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm"><input id="settingHistory" type="checkbox" checked class="h-4 w-4" /> Show level history</label>
-        <label class="flex items-center gap-2 rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm"><input id="settingGameRules" type="checkbox" class="h-4 w-4" /> Use game-specific rules</label>
-        <label class="flex items-center gap-2 rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm"><input id="settingPromotion" type="checkbox" class="h-4 w-4" /> Enable promotion mode</label>
-        <label class="flex items-center gap-2 rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm"><input id="settingSound" type="checkbox" checked class="h-4 w-4" /> Level-up sound</label>
-        <label class="rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm">
-          <span class="label mb-1">Stat cap mode</span>
-          <select id="settingCapMode" class="input h-10 w-full">
-            <option value="off">Off</option>
-            <option value="generic">Standard</option>
-          </select>
+      <div class="settings" id="settingsPanel">
+        <div class="settings-head" id="settingsToggle">
+          <span>Advanced Settings</span>
+          <span id="settingsText">Show</span>
+        </div>
+        <div class="settings-body">
+          <label class="check"><input id="settingStatCaps" type="checkbox" /> Enable stat caps</label>
+          <label class="check"><input id="settingClassGrowths" type="checkbox" checked /> Enable class growths</label>
+          <label class="check"><input id="settingExpectedValues" type="checkbox" checked /> Show expected values</label>
+          <label class="check"><input id="settingHistory" type="checkbox" checked /> Show level history</label>
+          <label class="check"><input id="settingGameRules" type="checkbox" /> Use game-specific rules</label>
+          <label class="check"><input id="settingPromotion" type="checkbox" /> Enable promotion mode</label>
+          <label class="check"><input id="settingSound" type="checkbox" checked /> Level-up sound</label>
+          <div class="select-wrap">
+            <label for="settingCapMode">Stat cap mode</label>
+            <select id="settingCapMode">
+              <option value="off">Off</option>
+              <option value="generic">Standard</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="subgrid">
+        <div class="panel output-panel">
+          <h3 class="panel-title">Discord Ready Output</h3>
+          <button id="copy" class="btn btn-gold" style="margin-bottom:10px;">Copy Text</button>
+          <textarea id="output" readonly></textarea>
+        </div>
+
+        <div class="panel history-panel" id="historyPanel">
+          <h3 class="panel-title">Level History</h3>
+          <div id="history" class="history-wrap"></div>
+        </div>
+      </div>
+
+      <div class="panel compare-panel" style="margin-top:18px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+          <h3 class="panel-title" style="margin:0;">Compare Builds</h3>
+          <div class="button-row">
+            <button id="saveCompare" class="btn btn-slate">Save Build</button>
+            <button id="compare" class="btn btn-blue">Compare</button>
+          </div>
+        </div>
+        <div id="comparison" class="compare-wrap">No comparison saved yet.</div>
+      </div>
+
+      <div class="file-panel">
+        <button id="export" class="btn btn-blue">Export JSON</button>
+        <label class="file-button">
+          Import JSON
+          <input type="file" id="import" accept="application/json" />
         </label>
+        <button id="save" class="btn btn-green">Save Build</button>
+        <button id="load" class="btn btn-slate">Load Build</button>
       </div>
-    </section>
-
-    <section class="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-lg border border-slate-700 bg-slate-900/40 p-4">
-      <div class="text-center"><span class="label">Current Level</span><span id="level" class="text-4xl font-black text-amber-400">1</span></div>
-      <div class="flex flex-wrap items-center gap-2">
-        <label class="flex items-center gap-2"><span class="label mb-0">Levels</span><input id="amount" type="number" min="1" value="1" class="num" /></label>
-        <button id="simulate" class="rounded-lg bg-teal-600 px-4 py-3 font-bold hover:bg-teal-500">Simulate</button>
-        <button id="levelUp" class="rounded-lg bg-emerald-600 px-6 py-3 text-lg font-bold hover:bg-emerald-500 active:scale-95">✨ Level Up!</button>
-        <button id="reset" class="rounded-lg bg-slate-700 px-5 py-3 hover:bg-slate-600">🔄 Reset</button>
-      </div>
-    </section>
-
-    <div class="overflow-x-auto rounded-lg border border-slate-700">
-      <table class="w-full border-collapse text-left">
-        <thead><tr class="border-b border-slate-700 bg-slate-900/60 text-xs font-bold uppercase tracking-wider text-amber-400"><th class="p-3">Stat Type</th><th class="p-3 text-center">Base Stat</th><th class="p-3 text-center">Growth Rate (%)</th><th class="p-3 text-center">Current Stat</th><th id="expectedHeader" class="p-3 text-center">Expected / Level</th></tr></thead>
-        <tbody id="stats"></tbody>
-      </table>
     </div>
+  </div>
 
-    <section class="mt-7 grid gap-5 lg:grid-cols-2">
-      <div class="rounded-lg border border-slate-700 bg-slate-900 p-4">
-        <div class="mb-2 flex items-center justify-between"><label class="label mb-0">📋 Discord Ready Output</label><button id="copy" class="rounded bg-amber-500 px-3 py-1 text-xs font-bold text-slate-950 hover:bg-amber-400">Copy Text</button></div>
-        <textarea id="output" readonly rows="6" class="input w-full resize-none border-slate-800 bg-slate-950 font-mono text-sm text-emerald-400"></textarea>
-      </div>
-      <div id="historyPanel" class="rounded-lg border border-slate-700 bg-slate-900 p-4"><h2 class="mb-3 text-lg font-bold text-amber-300">Level History</h2><div id="history" class="max-h-44 space-y-2 overflow-y-auto text-sm"></div></div>
-    </section>
-
-    <section class="mt-5 rounded-lg border border-slate-700 bg-slate-900 p-4">
-      <div class="flex flex-wrap items-center justify-between gap-3"><div><h2 class="text-lg font-bold text-amber-300">Compare Builds</h2><p class="text-xs text-slate-400">Save the current build, change it, then compare.</p></div><div class="flex gap-2"><button id="saveCompare" class="rounded bg-purple-700 px-3 py-2 text-sm font-bold hover:bg-purple-600">Save Build</button><button id="compare" class="rounded bg-amber-600 px-3 py-2 text-sm font-bold text-slate-950 hover:bg-amber-500">Compare</button></div></div>
-      <div id="comparison" class="mt-3 overflow-x-auto text-sm text-slate-300">No comparison saved yet.</div>
-    </section>
-
-    <section class="mt-5 flex flex-wrap items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 p-4"><h2 class="mr-2 text-lg font-bold text-amber-300">Build Files</h2><button id="export" class="rounded bg-blue-700 px-3 py-2 text-sm font-bold hover:bg-blue-600">Export JSON</button><label class="cursor-pointer rounded bg-slate-700 px-3 py-2 text-sm font-bold hover:bg-slate-600">Import JSON<input id="import" type="file" accept="application/json" class="hidden" /></label><button id="save" class="rounded bg-emerald-700 px-3 py-2 text-sm font-bold hover:bg-emerald-600">Save Browser Build</button><button id="load" class="rounded bg-slate-700 px-3 py-2 text-sm font-bold hover:bg-slate-600">Load Browser Build</button></section>
-  </main>
-
-  <div id="levelNotice" class="pointer-events-none fixed inset-x-0 top-5 z-40 flex justify-center px-4 opacity-0 transition-opacity"><div class="rounded-lg border border-amber-400/70 bg-slate-800 px-5 py-3 text-center shadow-xl"><strong id="noticeLevel" class="block text-xl text-amber-300">Level Up!</strong><span id="noticeGains" class="text-sm text-emerald-300"></span></div></div>
+  <div id="popup" class="level-popup" aria-live="polite">
+    <div class="popup-card">
+      <div class="popup-tag">Level Up</div>
+      <div class="popup-level" id="popupLevel">Lv 2</div>
+      <div class="popup-gains" id="popupGains"></div>
+      <button id="closePopup" class="popup-btn">Continue</button>
+    </div>
+  </div>
 
   <script>
     const data = [
-      ['hp','HP (Health)',22,65], ['str','Str (Strength)',7,50], ['mag','Mag (Magic)',1,10], ['skl','Skl (Skill/Dex)',8,55],
-      ['spd','Spd (Speed)',9,50], ['lck','Lck (Luck)',7,45], ['def','Def (Defense)',6,35], ['res','Res (Resistance)',2,25]
+      ['hp', 'HP', 22, 65],
+      ['str', 'Str', 7, 50],
+      ['mag', 'Mag', 1, 10],
+      ['skl', 'Skl', 8, 55],
+      ['spd', 'Spd', 9, 50],
+      ['lck', 'Lck', 7, 45],
+      ['def', 'Def', 6, 35],
+      ['res', 'Res', 2, 25]
     ];
+
     const classRates = {
-      Lord:[65,50,10,55,50,45,35,25], Cavalier:[70,45,5,45,45,35,40,15], Knight:[80,55,0,35,15,25,65,5],
-      Mage:[45,10,70,45,40,35,10,55], Myrmidon:[50,40,5,65,70,45,20,15], Thief:[45,35,5,50,65,60,15,25],
-      Cleric:[40,5,65,35,35,50,10,65], Archer:[55,45,5,70,40,35,25,15]
+      Lord: [65,50,10,55,50,45,35,25],
+      Cavalier: [70,45,5,45,45,35,40,15],
+      Knight: [80,55,0,35,15,25,65,5],
+      Mage: [45,10,70,45,40,35,10,55],
+      Myrmidon: [50,40,5,65,70,45,20,15],
+      Thief: [45,35,5,50,65,60,15,25],
+      Cleric: [40,5,65,35,35,50,10,65],
+      Archer: [55,45,5,70,40,35,25,15]
     };
-    const standardCaps = { hp: 60, str: 30, mag: 30, skl: 30, spd: 30, lck: 30, def: 30, res: 30 };
+
+    const capDefaults = { hp: 60, str: 30, mag: 30, skl: 30, spd: 30, lck: 30, def: 30, res: 30 };
     const defaultSettings = {
       statCapsEnabled: false,
       classGrowthsEnabled: true,
@@ -125,14 +676,19 @@
       soundEnabled: true,
       statCapMode: 'off'
     };
-    let settings = { ...defaultSettings };
-    const $ = id => document.getElementById(id);
-    let level = 1, stats = {}, history = [], savedCompare = null, audioContext = null;
 
-    function loadSettings(savedSettings = {}) {
-      settings = { ...defaultSettings, ...savedSettings };
-      syncSettingsUI();
-      refreshSettingsDrivenUI();
+    let settings = { ...defaultSettings };
+    let level = 1;
+    let stats = {};
+    let history = [];
+    let savedCompare = null;
+    let audioContext = null;
+
+    const $ = (id) => document.getElementById(id);
+
+    function setHeroText() {
+      $('heroName').textContent = $('title').value.trim() || 'Lord';
+      $('title').value = $('title').value.trim() || 'Lord';
     }
 
     function syncSettingsUI() {
@@ -144,87 +700,143 @@
       $('settingPromotion').checked = settings.promotionEnabled;
       $('settingSound').checked = settings.soundEnabled;
       $('settingCapMode').value = settings.statCapMode;
-      $('sound').textContent = settings.soundEnabled ? '🔊 Sound On' : '🔇 Sound Off';
+      $('soundToggle').textContent = settings.soundEnabled ? '🔊 Sound' : '🔇 Sound';
+      $('settingsText').textContent = $('settingsPanel').classList.contains('open') ? 'Hide' : 'Show';
+      $('historyPanel').style.display = settings.showHistory ? '' : 'none';
     }
 
-    function refreshSettingsDrivenUI() {
-      const expectedVisible = settings.showExpectedValues;
-      $('expectedHeader').style.display = expectedVisible ? '' : 'none';
-      document.querySelectorAll('[id^="expected-"]').forEach(el => {
-        el.parentElement.style.display = expectedVisible ? '' : 'none';
+    function refreshSettingEffects() {
+      const rows = document.querySelectorAll('[data-expected]');
+      rows.forEach((row) => {
+        row.style.display = settings.showExpectedValues ? '' : 'none';
       });
       $('historyPanel').style.display = settings.showHistory ? '' : 'none';
-      $('sound').textContent = settings.soundEnabled ? '🔊 Sound On' : '🔇 Sound Off';
+      $('history').style.display = settings.showHistory ? '' : 'none';
+      $('soundToggle').textContent = settings.soundEnabled ? '🔊 Sound' : '🔇 Sound';
     }
 
-    function initialize() {
+    function loadSettings(saved = {}) {
+      settings = { ...defaultSettings, ...saved };
+      syncSettingsUI();
+      refreshSettingEffects();
+    }
+
+    function initStatState() {
       stats = {};
-      data.forEach(stat => { stats[stat[0]] = Number(stat[2]); });
-      $('stats').innerHTML = data.map(stat => `
-        <tr class="border-b border-slate-700/50 hover:bg-slate-700/30">
-          <td class="p-3 font-medium text-slate-200">${stat[1]}</td>
-          <td class="p-3 text-center"><input id="base-${stat[0]}" type="number" min="0" value="${stat[2]}" class="num" /></td>
-          <td class="p-3 text-center"><input id="growth-${stat[0]}" type="number" min="0" value="${stat[3]}" class="num" />%</td>
-          <td id="cell-${stat[0]}" class="relative p-3 text-center text-xl font-black"><span id="current-${stat[0]}">${stat[2]}</span><span id="gain-${stat[0]}" class="absolute ml-2 text-sm font-bold text-emerald-400 opacity-0"></span></td>
-          <td id="expected-${stat[0]}" class="p-3 text-center text-cyan-300">${(stat[3] / 100).toFixed(2)}</td>
-        </tr>`).join('');
-      data.forEach(stat => {
-        $(`base-${stat[0]}`).onchange = event => updateBase(stat, event.target.value);
-        $(`growth-${stat[0]}`).oninput = event => { stat[3] = Math.max(0, Number(event.target.value) || 0); $('class').value = 'custom'; updateExpected(); };
+      data.forEach(([key, label, base, growth]) => {
+        stats[key] = Number(base);
       });
-      updateExpected();
-      updateOutput([]);
+      renderStats();
       renderHistory();
-      refreshSettingsDrivenUI();
+      updateOutput([]);
     }
 
-    function applyStatCap(statId, value) {
-      if (!settings.statCapsEnabled || settings.statCapMode === 'off') return value;
-      const cap = standardCaps[statId] ?? 30;
-      return Math.min(value, cap);
-    }
+    function renderStats() {
+      const statHtml = data.map(([key, label, base, growth]) => {
+        const value = stats[key] ?? base;
+        const expected = settings.showExpectedValues ? (Number(growth) / 100).toFixed(2) : '—';
+        return `
+          <div class="stat-box" data-stat="${key}">
+            <div class="stat-label">${label}</div>
+            <div class="stat-value">
+              <span>${value}</span>
+              <span class="gain-badge" data-gain="${key}">+1</span>
+            </div>
+            <div class="stat-value" style="display:none;" data-expected="${key}">${expected}</div>
+          </div>
+        `;
+      }).join('');
 
-    function updateBase(stat, value) {
-      stat[2] = Math.max(0, Number(value) || 0);
-      if (level === 1) {
-        stats[stat[0]] = stat[2];
-        $(`current-${stat[0]}`).textContent = stat[2];
-        updateOutput([]);
+      $('statGrid').innerHTML = statHtml;
+      data.forEach(([key, label, base, growth]) => {
+        const inputBase = document.createElement('input');
+        inputBase.id = `base-${key}`;
+        inputBase.type = 'number';
+        inputBase.value = base;
+        inputBase.style.display = 'none';
+        inputBase.dataset.key = key;
+
+        const inputGrowth = document.createElement('input');
+        inputGrowth.id = `growth-${key}`;
+        inputGrowth.type = 'number';
+        inputGrowth.value = growth;
+        inputGrowth.style.display = 'none';
+        inputGrowth.dataset.key = key;
+
+        document.body.appendChild(inputBase);
+        document.body.appendChild(inputGrowth);
+      });
+
+      data.forEach(([key]) => {
+        const valueNode = document.querySelector(`.stat-box[data-stat="${key}"] .stat-value span`);
+        const gainNode = document.querySelector(`[data-gain="${key}"]`);
+        if (valueNode) valueNode.textContent = stats[key];
+        if (gainNode) gainNode.textContent = '+1';
+      });
+
+      if (settings.showExpectedValues) {
+        data.forEach(([key, label, base, growth]) => {
+          const expectedNode = document.querySelector(`[data-expected="${key}"]`);
+          if (expectedNode) expectedNode.textContent = (Number(growth) / 100).toFixed(2);
+          expectedNode.style.display = '';
+        });
       }
     }
 
-    function updateExpected() {
-      data.forEach(stat => {
-        const rate = Number($(`growth-${stat[0]}`).value) || 0;
-        $(`expected-${stat[0]}`).textContent = (rate / 100).toFixed(2);
-      });
+    function applyStatCap(statKey, value) {
+      if (!settings.statCapsEnabled || settings.statCapMode === 'off') return value;
+      const cap = capDefaults[statKey] ?? 30;
+      return Math.min(value, cap);
     }
 
-    function applyClass() {
-      if (!settings.classGrowthsEnabled) return;
-      const rates = classRates[$('class').value];
-      if (!rates) return;
-      rates.forEach((rate, index) => {
-        data[index][3] = rate;
-        $(`growth-${data[index][0]}`).value = rate;
-      });
-      updateExpected();
-      updateOutput([]);
+    function updateOutput(gains) {
+      const name = ($('title').value.trim() + ' ' + $('name').value.trim()).trim() || 'Character';
+      const statText = data.map(([key]) => `${key.toUpperCase()}:${stats[key]}`).join(' | ');
+      $('output').value = `**${name} reached Level ${level}!**\n⚔️ **Class:** ${$('class').value}\n✨ **Gains:** ${gains.length ? gains.join(', ') : 'No stats went up! (Empty Level)'}\n📊 **New Stats:** ${statText}`;
+    }
+
+    function showPopup(gains) {
+      $('popupLevel').textContent = `Lv ${level}`;
+      $('popupGains').innerHTML = gains.length ? gains.map(g => `<span class="popup-gain">${g}</span>`).join('') : '<span class="popup-gain">No gains</span>';
+      $('popup').classList.add('show');
+    }
+
+    function closePopup() {
+      $('popup').classList.remove('show');
+    }
+
+    function renderHistory() {
+      if (!settings.showHistory) {
+        $('history').innerHTML = '';
+        return;
+      }
+      $('history').innerHTML = history.length ? history.map(entry => `
+        <div class="history-item">
+          <strong>Level ${entry.level}</strong>
+          <div>${entry.gains.length ? entry.gains.join(', ') : 'No gains'}</div>
+        </div>
+      `).join('') : '<div class="history-item"><strong>Level 1</strong><div>No gains yet.</div></div>';
     }
 
     function rollLevel() {
       const gains = [];
-      data.forEach(stat => {
-        const rate = Number($(`growth-${stat[0]}`).value) || 0;
+      data.forEach(([key, label, base, growth]) => {
+        const rate = Number(document.getElementById(`growth-${key}`)?.value ?? growth) || 0;
         const gain = Math.floor(rate / 100) + (Math.random() * 100 < rate % 100 ? 1 : 0);
         if (!gain) return;
+        const newValue = applyStatCap(key, stats[key] + gain);
+        stats[key] = newValue;
+        gains.push(`+${gain} ${key.toUpperCase()}`);
 
-        const nextValue = applyStatCap(stat[0], stats[stat[0]] + gain);
-        stats[stat[0]] = nextValue;
-        gains.push(`+${gain} ${stat[0].toUpperCase()}`);
-
-        const cell = $(`cell-${stat[0]}`), current = $(`current-${stat[0]}`), gainEl = $(`gain-${stat[0]}`);
-        current.textContent = stats[stat[0]]; gainEl.textContent = `+${gain}`; gainEl.classList.remove('gain-pop'); cell.classList.remove('level-up-flash'); void cell.offsetWidth; gainEl.classList.add('gain-pop'); cell.classList.add('level-up-flash');
+        const gainNode = document.querySelector(`[data-gain="${key}"]`);
+        const valueNode = document.querySelector(`.stat-box[data-stat="${key}"] .stat-value span`);
+        if (valueNode) valueNode.textContent = stats[key];
+        if (gainNode) {
+          gainNode.textContent = `+${gain}`;
+          gainNode.classList.remove('show');
+          void gainNode.offsetWidth;
+          gainNode.classList.add('show');
+        }
       });
       return gains;
     }
@@ -234,61 +846,48 @@
       $('level').textContent = level;
       const gains = rollLevel();
       history.push({ level, gains });
-      renderHistory();
       updateOutput(gains);
-      showNotice(gains);
+      renderHistory();
+      showPopup(gains);
       if (settings.soundEnabled) playChime();
     }
 
     function simulate() {
       const count = Math.max(1, Number($('amount').value) || 1);
-      for (let i = 0; i < count; i += 1) {
+      for (let i = 0; i < count; i++) {
         levelUp();
       }
     }
 
-    function renderHistory() {
-      if (!settings.showHistory) {
-        $('history').innerHTML = '';
-        return;
-      }
-      $('history').innerHTML = history.length ? history.map(entry => `<div class="rounded border border-slate-700 bg-slate-800 p-2"><b class="text-amber-300">Level ${entry.level}</b><div class="text-slate-300">${entry.gains.length ? entry.gains.join(', ') : 'No gains'}</div></div>`).join('') : '<p class="text-slate-500">No levels simulated yet.</p>';
-    }
-
-    function showNotice(gains) {
-      $('noticeLevel').textContent = `Level ${level}!`;
-      $('noticeGains').textContent = gains.length ? gains.join(' • ') : 'No stats increased';
-      const notice = $('levelNotice');
-      notice.classList.remove('opacity-0');
-      notice.classList.add('opacity-100');
-      clearTimeout(showNotice.timer);
-      showNotice.timer = setTimeout(() => {
-        notice.classList.add('opacity-0');
-        notice.classList.remove('opacity-100');
-      }, 1800);
-    }
-
-    function displayName() {
-      return `${$('title').value.trim()} ${$('name').value.trim()}`.trim() || 'Character';
-    }
-
-    function updateOutput(gains) {
-      $('output').value = `**${displayName()} reached Level ${level}!**\n⚔️ **Class:** ${$('class').value}\n✨ **Gains:** ${gains.length ? gains.join(', ') : 'No stats went up! (Empty Level)'}\n📊 **New Stats:** ${data.map(stat => `${stat[0].toUpperCase()}:${stats[stat[0]]}`).join(' | ')}`;
+    function applyClassGrowths() {
+      if (!settings.classGrowthsEnabled) return;
+      const className = $('class').value;
+      const rates = classRates[className];
+      if (!rates) return;
+      rates.forEach((rate, index) => {
+        const key = data[index][0];
+        const input = document.getElementById(`growth-${key}`);
+        if (input) input.value = rate;
+        data[index][3] = rate;
+      });
+      updateOutput([]);
     }
 
     function snapshot() {
-      return {
+      const out = {
         title: $('title').value,
         name: $('name').value,
-        game: $('game').value,
         className: $('class').value,
         level,
         stats: { ...stats },
-        growths: Object.fromEntries(data.map(stat => [stat[0], Number($(`growth-${stat[0]}`).value) || 0])),
-        bases: Object.fromEntries(data.map(stat => [stat[0], Number($(`base-${stat[0]}`).value) || 0])),
+        growths: {},
         history,
         settings: { ...settings }
       };
+      data.forEach(([key]) => {
+        out.growths[key] = Number(document.getElementById(`growth-${key}`)?.value || 0);
+      });
+      return out;
     }
 
     function compareBuilds() {
@@ -296,191 +895,210 @@
         $('comparison').textContent = 'Save a comparison build first.';
         return;
       }
-      $('comparison').innerHTML = `<table class="w-full"><thead><tr class="text-amber-300"><th class="p-2 text-left">Stat</th><th class="p-2">Saved</th><th class="p-2">Current</th><th class="p-2">Difference</th></tr></thead><tbody>${data.map(stat => {
-        const oldValue = savedCompare.stats[stat[0]] ?? 0;
-        const newValue = stats[stat[0]] ?? 0;
-        const difference = newValue - oldValue;
-        return `<tr class="border-t border-slate-700"><td class="p-2">${stat[1]}</td><td class="p-2 text-center">${oldValue}</td><td class="p-2 text-center">${newValue}</td><td class="p-2 text-center ${difference >= 0 ? 'text-emerald-400' : 'text-red-400'}">${difference >= 0 ? '+' : ''}${difference}</td></tr>`;
-      }).join('')}</tbody></table>`;
+      const rows = data.map(([key, label]) => {
+        const oldValue = savedCompare.stats[key] ?? 0;
+        const newValue = stats[key] ?? 0;
+        const delta = newValue - oldValue;
+        return `
+          <tr>
+            <td>${label}</td>
+            <td>${oldValue}</td>
+            <td>${newValue}</td>
+            <td style="color:${delta >= 0 ? '#8ef0a6' : '#ff8d90'}; font-weight:800;">${delta >= 0 ? '+' : ''}${delta}</td>
+          </tr>
+        `;
+      }).join('');
+
+      $('comparison').innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Stat</th>
+              <th>Saved</th>
+              <th>Current</th>
+              <th>Diff</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
     }
 
     function playChime() {
       audioContext ||= new AudioContext();
-      const now = audioContext.currentTime;
-      [523.25, 659.25, 783.99].forEach((frequency, index) => {
-        const oscillator = audioContext.createOscillator();
+      const start = audioContext.currentTime;
+      const notes = [523.25, 659.25, 783.99];
+      notes.forEach((freq, i) => {
+        const osc = audioContext.createOscillator();
         const gain = audioContext.createGain();
-        const start = now + index * .09;
-        oscillator.type = 'triangle';
-        oscillator.frequency.value = frequency;
-        oscillator.connect(gain);
+        const t = start + i * 0.09;
+        osc.type = 'triangle';
+        osc.frequency.value = freq;
+        osc.connect(gain);
         gain.connect(audioContext.destination);
-        gain.gain.setValueAtTime(0, start);
-        gain.gain.linearRampToValueAtTime(.12, start + .02);
-        gain.gain.exponentialRampToValueAtTime(.001, start + .3);
-        oscillator.start(start);
-        oscillator.stop(start + .32);
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.12, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+        osc.start(t);
+        osc.stop(t + 0.32);
       });
-    }
-
-    function state() {
-      return { ...snapshot(), config: data.map(stat => ({ ...stat })) };
     }
 
     function loadState(saved) {
       if (!saved) return;
       $('title').value = saved.title || 'Lord';
       $('name').value = saved.name || 'Eve';
-      $('game').value = saved.game || 'generic';
       $('class').value = saved.className || 'custom';
       level = saved.level || 1;
       history = saved.history || [];
       loadSettings(saved.settings || {});
-
-      if (saved.config) {
-        saved.config.forEach(item => {
-          const stat = data.find(entry => entry[0] === item[0]);
-          if (stat) {
-            stat[2] = Number(item[2]) || 0;
-            stat[3] = Number(item[3]) || 0;
-          }
-        });
-      }
-
-      initialize();
-      data.forEach(stat => {
-        const nextStats = saved.stats?.[stat[0]] ?? stat[2];
-        stats[stat[0]] = Number(nextStats) || 0;
-        $(`base-${stat[0]}`).value = stat[2];
-        $(`growth-${stat[0]}`).value = saved.growths?.[stat[0]] ?? stat[3];
-        $(`current-${stat[0]}`).textContent = stats[stat[0]];
+      renderStats();
+      data.forEach(([key, label, base, growth]) => {
+        const growthInput = document.getElementById(`growth-${key}`);
+        if (growthInput) growthInput.value = saved.growths?.[key] ?? growth;
       });
-
+      data.forEach(([key]) => {
+        stats[key] = saved.stats?.[key] ?? 0;
+        const valueNode = document.querySelector(`.stat-box[data-stat="${key}"] .stat-value span`);
+        if (valueNode) valueNode.textContent = stats[key];
+      });
       $('level').textContent = level;
-      updateExpected();
       updateOutput([]);
       renderHistory();
     }
 
-    $('toggleSettings').onclick = () => {
-      const panel = $('settingsPanel');
-      const hidden = panel.classList.toggle('hidden');
-      $('toggleSettings').textContent = hidden ? 'Show' : 'Hide';
-    };
-
-    $('levelUp').onclick = levelUp;
-    $('simulate').onclick = simulate;
-    $('apply').onclick = applyClass;
-    $('reset').onclick = () => {
-      level = 1;
-      history = [];
-      initialize();
-      $('level').textContent = 1;
-    };
-    ['title','name','class'].forEach(id => $(id).oninput = () => updateOutput([]));
-    $('sound').onclick = () => {
-      settings.soundEnabled = !settings.soundEnabled;
-      syncSettingsUI();
-    };
-    $('copy').onclick = () => navigator.clipboard.writeText($('output').value);
-    $('saveCompare').onclick = () => {
-      savedCompare = snapshot();
-      $('comparison').textContent = 'Comparison build saved. Change the current build, then click Compare.';
-    };
-    $('compare').onclick = compareBuilds;
-    $('save').onclick = () => localStorage.setItem('fe-build', JSON.stringify(state()));
-    $('load').onclick = () => {
-      const saved = localStorage.getItem('fe-build');
-      if (saved) loadState(JSON.parse(saved));
-    };
-    $('export').onclick = () => {
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(new Blob([JSON.stringify(state(), null, 2)], { type: 'application/json' }));
-      link.download = 'fe-build.json';
-      link.click();
-    };
-    $('import').onchange = event => {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        try { loadState(JSON.parse(reader.result)); } catch { alert('Invalid JSON build file.'); }
-      };
-      reader.readAsText(file);
-    };
-    $('portraitInput').onchange = event => {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = result => {
-        $('portrait').innerHTML = `<img src="${result.target.result}" alt="Character portrait" class="h-full w-full object-cover" />`;
-        $('removePortrait').classList.remove('hidden');
-      };
-      reader.readAsDataURL(file);
-    };
-    $('removePortrait').onclick = () => {
-      $('portrait').textContent = '🧙';
-      $('removePortrait').classList.add('hidden');
-      $('portraitInput').value = '';
-    };
-
-    $('settingStatCaps').onchange = () => {
-      settings.statCapsEnabled = $('settingStatCaps').checked;
-      if (settings.statCapsEnabled) settings.statCapMode = $('settingCapMode').value || 'generic';
-      else settings.statCapMode = 'off';
-      syncSettingsUI();
-      updateOutput([]);
-    };
-    $('settingClassGrowths').onchange = () => {
-      settings.classGrowthsEnabled = $('settingClassGrowths').checked;
-      if (!settings.classGrowthsEnabled) {
-        $('class').value = 'custom';
-      }
-      updateOutput([]);
-    };
-    $('settingExpectedValues').onchange = () => {
-      settings.showExpectedValues = $('settingExpectedValues').checked;
-      refreshSettingsDrivenUI();
-    };
-    $('settingHistory').onchange = () => {
-      settings.showHistory = $('settingHistory').checked;
-      renderHistory();
-      refreshSettingsDrivenUI();
-    };
-    $('settingGameRules').onchange = () => {
-      settings.gameRulesEnabled = $('settingGameRules').checked;
-      updateOutput([]);
-    };
-    $('settingPromotion').onchange = () => {
-      settings.promotionEnabled = $('settingPromotion').checked;
-      updateOutput([]);
-    };
-    $('settingSound').onchange = () => {
-      settings.soundEnabled = $('settingSound').checked;
-      syncSettingsUI();
-    };
-    $('settingCapMode').onchange = () => {
-      settings.statCapMode = $('settingCapMode').value;
-      if (settings.statCapMode !== 'off') settings.statCapsEnabled = true;
-      $('settingStatCaps').checked = settings.statCapsEnabled;
-      updateOutput([]);
-    };
-
-    $('game').onchange = () => {
-      if (settings.gameRulesEnabled && $('class').value !== 'custom') {
-        applyClass();
-      }
-    };
-    $('class').onchange = () => {
-      if (settings.classGrowthsEnabled && $('class').value !== 'custom') {
-        applyClass();
-      } else {
+    function wireEvents() {
+      $('levelUp').onclick = levelUp;
+      $('simulate').onclick = simulate;
+      $('apply').onclick = applyClassGrowths;
+      $('reset').onclick = () => {
+        level = 1;
+        history = [];
+        data.forEach(([key, label, base, growth]) => {
+          stats[key] = Number(base);
+          const inputGrowth = document.getElementById(`growth-${key}`);
+          if (inputGrowth) inputGrowth.value = growth;
+          const valueNode = document.querySelector(`.stat-box[data-stat="${key}"] .stat-value span`);
+          if (valueNode) valueNode.textContent = base;
+        });
+        $('level').textContent = level;
+        renderHistory();
         updateOutput([]);
-      }
-    };
+      };
 
-    loadSettings();
-    initialize();
+      $('soundToggle').onclick = () => {
+        settings.soundEnabled = !settings.soundEnabled;
+        syncSettingsUI();
+      };
+
+      $('copy').onclick = () => navigator.clipboard.writeText($('output').value);
+      $('saveCompare').onclick = () => {
+        savedCompare = snapshot();
+        $('comparison').textContent = 'Saved. Change your build and click Compare.';
+      };
+      $('compare').onclick = compareBuilds;
+      $('save').onclick = () => localStorage.setItem('fe-build', JSON.stringify(snapshot()));
+      $('load').onclick = () => {
+        const raw = localStorage.getItem('fe-build');
+        if (!raw) return;
+        loadState(JSON.parse(raw));
+      };
+      $('export').onclick = () => {
+        const blob = new Blob([JSON.stringify(snapshot(), null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'fe-build.json';
+        a.click();
+        URL.revokeObjectURL(url);
+      };
+      $('import').onchange = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try { loadState(JSON.parse(reader.result)); } catch { alert('Invalid JSON build file.'); }
+        };
+        reader.readAsText(file);
+      };
+
+      $('settingStatCaps').onchange = () => {
+        settings.statCapsEnabled = $('settingStatCaps').checked;
+        if (settings.statCapsEnabled) settings.statCapMode = $('settingCapMode').value || 'generic';
+        else settings.statCapMode = 'off';
+        syncSettingsUI();
+      };
+      $('settingClassGrowths').onchange = () => { settings.classGrowthsEnabled = $('settingClassGrowths').checked; };
+      $('settingExpectedValues').onchange = () => { settings.showExpectedValues = $('settingExpectedValues').checked; refreshSettingEffects(); };
+      $('settingHistory').onchange = () => { settings.showHistory = $('settingHistory').checked; renderHistory(); refreshSettingEffects(); syncSettingsUI(); };
+      $('settingGameRules').onchange = () => { settings.gameRulesEnabled = $('settingGameRules').checked; };
+      $('settingPromotion').onchange = () => { settings.promotionEnabled = $('settingPromotion').checked; };
+      $('settingSound').onchange = () => { settings.soundEnabled = $('settingSound').checked; syncSettingsUI(); };
+      $('settingCapMode').onchange = () => {
+        settings.statCapMode = $('settingCapMode').value;
+        if (settings.statCapMode !== 'off') settings.statCapsEnabled = true;
+        else settings.statCapsEnabled = false;
+        syncSettingsUI();
+      };
+
+      $('settingsToggle').onclick = () => {
+        const panel = $('settingsPanel');
+        panel.classList.toggle('open');
+        syncSettingsUI();
+      };
+
+      $('class').onchange = () => {
+        if (settings.classGrowthsEnabled && $('class').value !== 'custom') applyClassGrowths();
+        updateOutput([]);
+      };
+
+      $('title').oninput = () => setHeroText();
+      $('name').oninput = () => setHeroText();
+      $('closePopup').onclick = closePopup;
+
+      $('portraitInput') && $('portraitInput').addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          $('portrait').innerHTML = `<img src="${e.target.result}" alt="Portrait" />`;
+        };
+        reader.readAsDataURL(file);
+      });
+
+      $('removePortrait') && $('removePortrait').addEventListener('click', () => {
+        $('portrait').textContent = '🧙';
+        $('portraitInput').value = '';
+      });
+    }
+
+    function addPortraitControls() {
+      const portraitWrap = $('portrait');
+      portraitWrap.innerHTML = `
+        <img src="" alt="Portrait" style="display:none" />
+        <div class="portrait-figure" style="font-size:clamp(5.5rem,11vw,12rem);">🧙</div>
+      `;
+    }
+
+    function init() {
+      setHeroText();
+      loadSettings();
+      initStatState();
+      data.forEach(([key, label, base, growth]) => {
+        const inputGrowth = document.createElement('input');
+        inputGrowth.id = `growth-${key}`;
+        inputGrowth.type = 'number';
+        inputGrowth.value = growth;
+        inputGrowth.style.display = 'none';
+        document.body.appendChild(inputGrowth);
+      });
+      wireEvents();
+      renderHistory();
+      updateOutput([]);
+      $('level').textContent = level;
+    }
+
+    init();
   </script>
 </body>
 </html>
