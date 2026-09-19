@@ -45,6 +45,30 @@
       </div>
     </section>
 
+    <section class="mb-6 rounded-lg border border-slate-700 bg-slate-900/40 p-4">
+      <div class="flex items-center justify-between gap-3">
+        <h2 class="text-lg font-bold text-amber-300">Advanced Settings</h2>
+        <button id="toggleSettings" type="button" class="rounded bg-slate-700 px-3 py-1 text-sm font-bold hover:bg-slate-600">Show</button>
+      </div>
+
+      <div id="settingsPanel" class="mt-3 hidden grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <label class="flex items-center gap-2 rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm"><input id="settingStatCaps" type="checkbox" class="h-4 w-4" /> Enable stat caps</label>
+        <label class="flex items-center gap-2 rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm"><input id="settingClassGrowths" type="checkbox" checked class="h-4 w-4" /> Enable class growths</label>
+        <label class="flex items-center gap-2 rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm"><input id="settingExpectedValues" type="checkbox" checked class="h-4 w-4" /> Show expected values</label>
+        <label class="flex items-center gap-2 rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm"><input id="settingHistory" type="checkbox" checked class="h-4 w-4" /> Show level history</label>
+        <label class="flex items-center gap-2 rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm"><input id="settingGameRules" type="checkbox" class="h-4 w-4" /> Use game-specific rules</label>
+        <label class="flex items-center gap-2 rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm"><input id="settingPromotion" type="checkbox" class="h-4 w-4" /> Enable promotion mode</label>
+        <label class="flex items-center gap-2 rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm"><input id="settingSound" type="checkbox" checked class="h-4 w-4" /> Level-up sound</label>
+        <label class="rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm">
+          <span class="label mb-1">Stat cap mode</span>
+          <select id="settingCapMode" class="input h-10 w-full">
+            <option value="off">Off</option>
+            <option value="generic">Standard</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
     <section class="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-lg border border-slate-700 bg-slate-900/40 p-4">
       <div class="text-center"><span class="label">Current Level</span><span id="level" class="text-4xl font-black text-amber-400">1</span></div>
       <div class="flex flex-wrap items-center gap-2">
@@ -57,7 +81,7 @@
 
     <div class="overflow-x-auto rounded-lg border border-slate-700">
       <table class="w-full border-collapse text-left">
-        <thead><tr class="border-b border-slate-700 bg-slate-900/60 text-xs font-bold uppercase tracking-wider text-amber-400"><th class="p-3">Stat Type</th><th class="p-3 text-center">Base Stat</th><th class="p-3 text-center">Growth Rate (%)</th><th class="p-3 text-center">Current Stat</th><th class="p-3 text-center">Expected / Level</th></tr></thead>
+        <thead><tr class="border-b border-slate-700 bg-slate-900/60 text-xs font-bold uppercase tracking-wider text-amber-400"><th class="p-3">Stat Type</th><th class="p-3 text-center">Base Stat</th><th class="p-3 text-center">Growth Rate (%)</th><th class="p-3 text-center">Current Stat</th><th id="expectedHeader" class="p-3 text-center">Expected / Level</th></tr></thead>
         <tbody id="stats"></tbody>
       </table>
     </div>
@@ -67,7 +91,7 @@
         <div class="mb-2 flex items-center justify-between"><label class="label mb-0">📋 Discord Ready Output</label><button id="copy" class="rounded bg-amber-500 px-3 py-1 text-xs font-bold text-slate-950 hover:bg-amber-400">Copy Text</button></div>
         <textarea id="output" readonly rows="6" class="input w-full resize-none border-slate-800 bg-slate-950 font-mono text-sm text-emerald-400"></textarea>
       </div>
-      <div class="rounded-lg border border-slate-700 bg-slate-900 p-4"><h2 class="mb-3 text-lg font-bold text-amber-300">Level History</h2><div id="history" class="max-h-44 space-y-2 overflow-y-auto text-sm"></div></div>
+      <div id="historyPanel" class="rounded-lg border border-slate-700 bg-slate-900 p-4"><h2 class="mb-3 text-lg font-bold text-amber-300">Level History</h2><div id="history" class="max-h-44 space-y-2 overflow-y-auto text-sm"></div></div>
     </section>
 
     <section class="mt-5 rounded-lg border border-slate-700 bg-slate-900 p-4">
@@ -90,8 +114,49 @@
       Mage:[45,10,70,45,40,35,10,55], Myrmidon:[50,40,5,65,70,45,20,15], Thief:[45,35,5,50,65,60,15,25],
       Cleric:[40,5,65,35,35,50,10,65], Archer:[55,45,5,70,40,35,25,15]
     };
+    const standardCaps = { hp: 60, str: 30, mag: 30, skl: 30, spd: 30, lck: 30, def: 30, res: 30 };
+    const defaultSettings = {
+      statCapsEnabled: false,
+      classGrowthsEnabled: true,
+      gameRulesEnabled: false,
+      promotionEnabled: false,
+      showExpectedValues: true,
+      showHistory: true,
+      soundEnabled: true,
+      statCapMode: 'off'
+    };
+    let settings = { ...defaultSettings };
     const $ = id => document.getElementById(id);
-    let level = 1, stats = {}, history = [], savedCompare = null, soundOn = true, audioContext = null;
+    let level = 1, stats = {}, history = [], savedCompare = null, audioContext = null;
+
+    function loadSettings(savedSettings = {}) {
+      settings = { ...defaultSettings, ...savedSettings };
+      syncSettingsUI();
+      refreshSettingsDrivenUI();
+    }
+
+    function syncSettingsUI() {
+      $('settingStatCaps').checked = settings.statCapsEnabled;
+      $('settingClassGrowths').checked = settings.classGrowthsEnabled;
+      $('settingExpectedValues').checked = settings.showExpectedValues;
+      $('settingHistory').checked = settings.showHistory;
+      $('settingGameRules').checked = settings.gameRulesEnabled;
+      $('settingPromotion').checked = settings.promotionEnabled;
+      $('settingSound').checked = settings.soundEnabled;
+      $('settingCapMode').value = settings.statCapMode;
+      $('sound').textContent = settings.soundEnabled ? '🔊 Sound On' : '🔇 Sound Off';
+    }
+
+    function refreshSettingsDrivenUI() {
+      const expectedVisible = settings.showExpectedValues;
+      $('expectedHeader').style.display = expectedVisible ? '' : 'none';
+      document.querySelectorAll('[id^="expected-"]').forEach(el => {
+        el.parentElement.style.display = expectedVisible ? '' : 'none';
+      });
+
+      $('historyPanel').style.display = settings.showHistory ? '' : 'none';
+      $('sound').textContent = settings.soundEnabled ? '🔊 Sound On' : '🔇 Sound Off';
+    }
 
     function initialize() {
       stats = {};
@@ -106,42 +171,326 @@
         </tr>`).join('');
       data.forEach(stat => {
         $(`base-${stat[0]}`).onchange = event => updateBase(stat, event.target.value);
-        $(`growth-${stat[0]}`).oninput = event => { stat[3] = Math.max(0, Number(event.target.value) || 0); $('class').value = 'custom'; updateExpected(); };
+        $(`growth-${stat[0]}`).oninput = event => {
+          stat[3] = Math.max(0, Number(event.target.value) || 0);
+          $('class').value = 'custom';
+          updateExpected();
+        };
       });
-      updateExpected(); updateOutput([]); renderHistory();
+      updateExpected();
+      updateOutput([]);
+      renderHistory();
+      refreshSettingsDrivenUI();
     }
 
-    function updateBase(stat, value) { stat[2] = Math.max(0, Number(value) || 0); if (level === 1) { stats[stat[0]] = stat[2]; $(`current-${stat[0]}`).textContent = stat[2]; updateOutput([]); } }
-    function updateExpected() { data.forEach(stat => { const rate = Number($(`growth-${stat[0]}`).value) || 0; $(`expected-${stat[0]}`).textContent = (rate / 100).toFixed(2); }); }
-    function applyClass() { const rates = classRates[$('class').value]; if (!rates) return; rates.forEach((rate, index) => { data[index][3] = rate; $(`growth-${data[index][0]}`).value = rate; }); updateExpected(); updateOutput([]); }
+    function applyStatCap(statId, value) {
+      if (!settings.statCapsEnabled || settings.statCapMode === 'off') return value;
+      const cap = standardCaps[statId] ?? 30;
+      return Math.min(value, cap);
+    }
+
+    function updateBase(stat, value) {
+      stat[2] = Math.max(0, Number(value) || 0);
+      if (level === 1) {
+        stats[stat[0]] = stat[2];
+        $(`current-${stat[0]}`).textContent = stat[2];
+        updateOutput([]);
+      }
+    }
+
+    function updateExpected() {
+      data.forEach(stat => {
+        const rate = Number($(`growth-${stat[0]}`).value) || 0;
+        $(`expected-${stat[0]}`).textContent = (rate / 100).toFixed(2);
+      });
+    }
+
+    function applyClass() {
+      if (!settings.classGrowthsEnabled) return;
+      const rates = classRates[$('class').value];
+      if (!rates) return;
+      rates.forEach((rate, index) => {
+        data[index][3] = rate;
+        $(`growth-${data[index][0]}`).value = rate;
+      });
+      updateExpected();
+      updateOutput([]);
+    }
+
     function rollLevel() {
       const gains = [];
       data.forEach(stat => {
         const rate = Number($(`growth-${stat[0]}`).value) || 0;
         const gain = Math.floor(rate / 100) + (Math.random() * 100 < rate % 100 ? 1 : 0);
         if (!gain) return;
-        stats[stat[0]] += gain; gains.push(`+${gain} ${stat[0].toUpperCase()}`);
+
+        const nextValue = applyStatCap(stat[0], stats[stat[0]] + gain);
+        stats[stat[0]] = nextValue;
+        gains.push(`+${gain} ${stat[0].toUpperCase()}`);
+
         const cell = $(`cell-${stat[0]}`), current = $(`current-${stat[0]}`), gainEl = $(`gain-${stat[0]}`);
-        current.textContent = stats[stat[0]]; gainEl.textContent = `+${gain}`; gainEl.classList.remove('gain-pop'); cell.classList.remove('level-up-flash'); void cell.offsetWidth; gainEl.classList.add('gain-pop'); cell.classList.add('level-up-flash');
+        current.textContent = stats[stat[0]];
+        gainEl.textContent = `+${gain}`;
+        gainEl.classList.remove('gain-pop');
+        cell.classList.remove('level-up-flash');
+        void cell.offsetWidth;
+        gainEl.classList.add('gain-pop');
+        cell.classList.add('level-up-flash');
       });
       return gains;
     }
-    function levelUp() { level += 1; $('level').textContent = level; const gains = rollLevel(); history.push({ level, gains }); renderHistory(); updateOutput(gains); showNotice(gains); if (soundOn) playChime(); }
-    function simulate() { const count = Math.max(1, Number($('amount').value) || 1); for (let i = 0; i < count; i += 1) levelUp(); }
-    function renderHistory() { $('history').innerHTML = history.length ? history.map(entry => `<div class="rounded border border-slate-700 bg-slate-800 p-2"><b class="text-amber-300">Level ${entry.level}</b><div class="text-slate-300">${entry.gains.length ? entry.gains.join(', ') : 'No gains'}</div></div>`).join('') : '<p class="text-slate-500">No levels simulated yet.</p>'; }
-    function showNotice(gains) { $('noticeLevel').textContent = `Level ${level}!`; $('noticeGains').textContent = gains.length ? gains.join('  •  ') : 'No stats increased'; const notice = $('levelNotice'); notice.classList.remove('opacity-0'); notice.classList.add('opacity-100'); clearTimeout(showNotice.timer); showNotice.timer = setTimeout(() => { notice.classList.add('opacity-0'); notice.classList.remove('opacity-100'); }, 1800); }
-    function displayName() { return `${$('title').value.trim()} ${$('name').value.trim()}`.trim() || 'Character'; }
-    function updateOutput(gains) { $('output').value = `**${displayName()} reached Level ${level}!**\n⚔️ **Class:** ${$('class').value}\n✨ **Gains:** ${gains.length ? gains.join(', ') : 'No stats went up! (Empty Level)'}\n📊 **New Stats:** ${data.map(stat => `${stat[0].toUpperCase()}:${stats[stat[0]]}`).join(' | ')}`; }
-    function snapshot() { return { title:$('title').value, name:$('name').value, game:$('game').value, className:$('class').value, level, stats:{...stats}, growths:Object.fromEntries(data.map(stat => [stat[0], Number($(`growth-${stat[0]}`).value) || 0])), bases:data.map(stat => [stat[0], stat[2]]), history }; }
-    function compareBuilds() { if (!savedCompare) { $('comparison').textContent = 'Save a comparison build first.'; return; } $('comparison').innerHTML = `<table class="w-full"><thead><tr class="text-amber-300"><th class="p-2 text-left">Stat</th><th class="p-2">Saved</th><th class="p-2">Current</th><th class="p-2">Difference</th></tr></thead><tbody>${data.map(stat => { const oldValue = savedCompare.stats[stat[0]], newValue = stats[stat[0]], difference = newValue - oldValue; return `<tr class="border-t border-slate-700"><td class="p-2">${stat[1]}</td><td class="p-2 text-center">${oldValue}</td><td class="p-2 text-center">${newValue}</td><td class="p-2 text-center ${difference >= 0 ? 'text-emerald-400' : 'text-red-400'}">${difference >= 0 ? '+' : ''}${difference}</td></tr>`; }).join('')}</tbody></table>`; }
-    function playChime() { audioContext ||= new AudioContext(); const now = audioContext.currentTime; [523.25, 659.25, 783.99].forEach((frequency, index) => { const oscillator = audioContext.createOscillator(), gain = audioContext.createGain(), start = now + index * .09; oscillator.type = 'triangle'; oscillator.frequency.value = frequency; oscillator.connect(gain); gain.connect(audioContext.destination); gain.gain.setValueAtTime(0, start); gain.gain.linearRampToValueAtTime(.12, start + .02); gain.gain.exponentialRampToValueAtTime(.001, start + .3); oscillator.start(start); oscillator.stop(start + .32); }); }
-    function state() { return {...snapshot(), config:data.map(stat => ({...stat}))}; }
-    function loadState(saved) { $('title').value = saved.title || 'Lord'; $('name').value = saved.name || 'Eve'; $('game').value = saved.game || 'generic'; $('class').value = saved.className || 'custom'; level = saved.level || 1; history = saved.history || []; saved.config?.forEach(item => { const stat = data.find(entry => entry[0] === item[0]); if (stat) { stat[2] = item[2]; stat[3] = item[3]; } }); initialize(); data.forEach(stat => { stats[stat[0]] = saved.stats?.[stat[0]] ?? stat[2]; $(`base-${stat[0]}`).value = stat[2]; $(`growth-${stat[0]}`).value = saved.growths?.[stat[0]] ?? stat[3]; $(`current-${stat[0]}`).textContent = stats[stat[0]]; }); $('level').textContent = level; updateExpected(); updateOutput([]); renderHistory(); }
 
-    $('levelUp').onclick = levelUp; $('simulate').onclick = simulate; $('apply').onclick = applyClass; $('reset').onclick = () => { level = 1; history = []; initialize(); $('level').textContent = 1; }; ['title','name','class'].forEach(id => $(id).oninput = () => updateOutput([])); $('sound').onclick = () => { soundOn = !soundOn; $('sound').textContent = soundOn ? '🔊 Sound On' : '🔇 Sound Off'; }; $('copy').onclick = () => navigator.clipboard.writeText($('output').value); $('saveCompare').onclick = () => { savedCompare = snapshot(); $('comparison').textContent = 'Comparison build saved. Change the current build, then click Compare.'; }; $('compare').onclick = compareBuilds;
-    $('save').onclick = () => localStorage.setItem('fe-build', JSON.stringify(state())); $('load').onclick = () => { const saved = localStorage.getItem('fe-build'); if (saved) loadState(JSON.parse(saved)); }; $('export').onclick = () => { const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([JSON.stringify(state(), null, 2)], {type:'application/json'})); link.download = 'fe-build.json'; link.click(); };
-    $('import').onchange = event => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { try { loadState(JSON.parse(reader.result)); } catch { alert('Invalid JSON build file.'); } }; reader.readAsText(file); };
-    $('portraitInput').onchange = event => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = result => { $('portrait').innerHTML = `<img src="${result.target.result}" alt="Character portrait" class="h-full w-full object-cover">`; $('removePortrait').classList.remove('hidden'); }; reader.readAsDataURL(file); }; $('removePortrait').onclick = () => { $('portrait').textContent = '🧙'; $('removePortrait').classList.add('hidden'); $('portraitInput').value = ''; };
+    function levelUp() {
+      level += 1;
+      $('level').textContent = level;
+      const gains = rollLevel();
+      history.push({ level, gains });
+      renderHistory();
+      updateOutput(gains);
+      showNotice(gains);
+      if (settings.soundEnabled) playChime();
+    }
+
+    function simulate() {
+      const count = Math.max(1, Number($('amount').value) || 1);
+      for (let i = 0; i < count; i += 1) {
+        levelUp();
+      }
+    }
+
+    function renderHistory() {
+      if (!settings.showHistory) {
+        $('history').innerHTML = '';
+        return;
+      }
+      $('history').innerHTML = history.length ? history.map(entry => `<div class="rounded border border-slate-700 bg-slate-800 p-2"><b class="text-amber-300">Level ${entry.level}</b><div class="text-slate-300">${entry.gains.length ? entry.gains.join(', ') : 'No gains'}</div></div>`).join('') : '<p class="text-slate-500">No levels simulated yet.</p>';
+    }
+
+    function showNotice(gains) {
+      $('noticeLevel').textContent = `Level ${level}!`;
+      $('noticeGains').textContent = gains.length ? gains.join(' • ') : 'No stats increased';
+      const notice = $('levelNotice');
+      notice.classList.remove('opacity-0');
+      notice.classList.add('opacity-100');
+      clearTimeout(showNotice.timer);
+      showNotice.timer = setTimeout(() => {
+        notice.classList.add('opacity-0');
+        notice.classList.remove('opacity-100');
+      }, 1800);
+    }
+
+    function displayName() {
+      return `${$('title').value.trim()} ${$('name').value.trim()}`.trim() || 'Character';
+    }
+
+    function updateOutput(gains) {
+      $('output').value = `**${displayName()} reached Level ${level}!**\n⚔️ **Class:** ${$('class').value}\n✨ **Gains:** ${gains.length ? gains.join(', ') : 'No stats went up! (Empty Level)'}\n📊 **New Stats:** ${data.map(stat => `${stat[0].toUpperCase()}:${stats[stat[0]]}`).join(' | ')}`;
+    }
+
+    function snapshot() {
+      return {
+        title: $('title').value,
+        name: $('name').value,
+        game: $('game').value,
+        className: $('class').value,
+        level,
+        stats: { ...stats },
+        growths: Object.fromEntries(data.map(stat => [stat[0], Number($(`growth-${stat[0]}`).value) || 0])),
+        bases: Object.fromEntries(data.map(stat => [stat[0], Number($(`base-${stat[0]}`).value) || 0])),
+        history,
+        settings: { ...settings }
+      };
+    }
+
+    function compareBuilds() {
+      if (!savedCompare) {
+        $('comparison').textContent = 'Save a comparison build first.';
+        return;
+      }
+      $('comparison').innerHTML = `<table class="w-full"><thead><tr class="text-amber-300"><th class="p-2 text-left">Stat</th><th class="p-2">Saved</th><th class="p-2">Current</th><th class="p-2">Difference</th></tr></thead><tbody>${data.map(stat => {
+        const oldValue = savedCompare.stats[stat[0]] ?? 0;
+        const newValue = stats[stat[0]] ?? 0;
+        const difference = newValue - oldValue;
+        return `<tr class="border-t border-slate-700"><td class="p-2">${stat[1]}</td><td class="p-2 text-center">${oldValue}</td><td class="p-2 text-center">${newValue}</td><td class="p-2 text-center ${difference >= 0 ? 'text-emerald-400' : 'text-red-400'}">${difference >= 0 ? '+' : ''}${difference}</td></tr>`;
+      }).join('')}</tbody></table>`;
+    }
+
+    function playChime() {
+      audioContext ||= new AudioContext();
+      const now = audioContext.currentTime;
+      [523.25, 659.25, 783.99].forEach((frequency, index) => {
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        const start = now + index * .09;
+        oscillator.type = 'triangle';
+        oscillator.frequency.value = frequency;
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+        gain.gain.setValueAtTime(0, start);
+        gain.gain.linearRampToValueAtTime(.12, start + .02);
+        gain.gain.exponentialRampToValueAtTime(.001, start + .3);
+        oscillator.start(start);
+        oscillator.stop(start + .32);
+      });
+    }
+
+    function state() {
+      return { ...snapshot(), config: data.map(stat => ({ ...stat })) };
+    }
+
+    function loadState(saved) {
+      if (!saved) return;
+      $('title').value = saved.title || 'Lord';
+      $('name').value = saved.name || 'Eve';
+      $('game').value = saved.game || 'generic';
+      $('class').value = saved.className || 'custom';
+      level = saved.level || 1;
+      history = saved.history || [];
+      loadSettings(saved.settings || {});
+
+      if (saved.config) {
+        saved.config.forEach(item => {
+          const stat = data.find(entry => entry[0] === item[0]);
+          if (stat) {
+            stat[2] = Number(item[2]) || 0;
+            stat[3] = Number(item[3]) || 0;
+          }
+        });
+      }
+
+      initialize();
+      data.forEach(stat => {
+        const nextStats = saved.stats?.[stat[0]] ?? stat[2];
+        stats[stat[0]] = Number(nextStats) || 0;
+        $(`base-${stat[0]}`).value = stat[2];
+        $(`growth-${stat[0]}`).value = saved.growths?.[stat[0]] ?? stat[3];
+        $(`current-${stat[0]}`).textContent = stats[stat[0]];
+      });
+
+      $('level').textContent = level;
+      updateExpected();
+      updateOutput([]);
+      renderHistory();
+    }
+
+    $('toggleSettings').onclick = () => {
+      const panel = $('settingsPanel');
+      const hidden = panel.classList.toggle('hidden');
+      $('toggleSettings').textContent = hidden ? 'Show' : 'Hide';
+    };
+
+    $('levelUp').onclick = levelUp;
+    $('simulate').onclick = simulate;
+    $('apply').onclick = applyClass;
+    $('reset').onclick = () => {
+      level = 1;
+      history = [];
+      initialize();
+      $('level').textContent = 1;
+    };
+    ['title','name','class'].forEach(id => $(id).oninput = () => updateOutput([]));
+    $('sound').onclick = () => {
+      settings.soundEnabled = !settings.soundEnabled;
+      syncSettingsUI();
+    };
+    $('copy').onclick = () => navigator.clipboard.writeText($('output').value);
+    $('saveCompare').onclick = () => {
+      savedCompare = snapshot();
+      $('comparison').textContent = 'Comparison build saved. Change the current build, then click Compare.';
+    };
+    $('compare').onclick = compareBuilds;
+    $('save').onclick = () => localStorage.setItem('fe-build', JSON.stringify(state()));
+    $('load').onclick = () => {
+      const saved = localStorage.getItem('fe-build');
+      if (saved) loadState(JSON.parse(saved));
+    };
+    $('export').onclick = () => {
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(new Blob([JSON.stringify(state(), null, 2)], { type: 'application/json' }));
+      link.download = 'fe-build.json';
+      link.click();
+    };
+    $('import').onchange = event => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try { loadState(JSON.parse(reader.result)); } catch { alert('Invalid JSON build file.'); }
+      };
+      reader.readAsText(file);
+    };
+    $('portraitInput').onchange = event => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = result => {
+        $('portrait').innerHTML = `<img src="${result.target.result}" alt="Character portrait" class="h-full w-full object-cover" />`;
+        $('removePortrait').classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+    };
+    $('removePortrait').onclick = () => {
+      $('portrait').textContent = '🧙';
+      $('removePortrait').classList.add('hidden');
+      $('portraitInput').value = '';
+    };
+
+    $('settingStatCaps').onchange = () => {
+      settings.statCapsEnabled = $('settingStatCaps').checked;
+      if (settings.statCapsEnabled) settings.statCapMode = $('settingCapMode').value || 'generic';
+      else settings.statCapMode = 'off';
+      syncSettingsUI();
+      updateOutput([]);
+    };
+    $('settingClassGrowths').onchange = () => {
+      settings.classGrowthsEnabled = $('settingClassGrowths').checked;
+      if (!settings.classGrowthsEnabled) {
+        $('class').value = 'custom';
+      }
+      updateOutput([]);
+    };
+    $('settingExpectedValues').onchange = () => {
+      settings.showExpectedValues = $('settingExpectedValues').checked;
+      refreshSettingsDrivenUI();
+    };
+    $('settingHistory').onchange = () => {
+      settings.showHistory = $('settingHistory').checked;
+      renderHistory();
+      refreshSettingsDrivenUI();
+    };
+    $('settingGameRules').onchange = () => {
+      settings.gameRulesEnabled = $('settingGameRules').checked;
+      updateOutput([]);
+    };
+    $('settingPromotion').onchange = () => {
+      settings.promotionEnabled = $('settingPromotion').checked;
+      updateOutput([]);
+    };
+    $('settingSound').onchange = () => {
+      settings.soundEnabled = $('settingSound').checked;
+      syncSettingsUI();
+    };
+    $('settingCapMode').onchange = () => {
+      settings.statCapMode = $('settingCapMode').value;
+      if (settings.statCapMode !== 'off') settings.statCapsEnabled = true;
+      $('settingStatCaps').checked = settings.statCapsEnabled;
+      updateOutput([]);
+    };
+
+    $('game').onchange = () => {
+      if (settings.gameRulesEnabled && $('class').value !== 'custom') {
+        applyClass();
+      }
+    };
+    $('class').onchange = () => {
+      if (settings.classGrowthsEnabled && $('class').value !== 'custom') {
+        applyClass();
+      } else {
+        updateOutput([]);
+      }
+    };
+
+    loadSettings();
     initialize();
   </script>
 </body>
