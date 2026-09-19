@@ -1,1104 +1,959 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FE Stat Growth Simulator</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    :root {
-      --bg-1: #060d1a;
-      --bg-2: #0d1728;
-      --panel: rgba(10, 20, 34, 0.78);
-      --panel-strong: rgba(11, 21, 35, 0.92);
-      --border: #d9b65b;
-      --gold: #f3d77a;
-      --gold-soft: #c4922c;
-      --ink: #0a1020;
-      --blue: #47618d;
-      --blue-2: #3f577d;
-      --text: #edf4ff;
-      --muted: #b6c5dd;
-      --green: #59e36d;
-      --green-2: #2ecb55;
-      --red: #ff5a6b;
-      --shadow: rgba(0,0,0,.45);
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fire Emblem Stat Growth Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      :root {
+        --bg: #020817;
+        --bg-panel: #111827;
+        --panel-alt: #0f172a;
+        --panel-soft: #1e293b;
+        --gold: #facc15;
+        --gold-soft: #f59e0b;
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+        --border: #475569;
+        --green: #22c55e;
+        --red: #ef4444;
+        --shadow: rgba(15, 23, 42, 0.9);
+      }
 
-    * { box-sizing: border-box; }
+      * { box-sizing: border-box; }
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background:
-        radial-gradient(circle at top, rgba(77,97,132,.3), transparent 38%),
-        linear-gradient(180deg, var(--bg-2), var(--bg-1) 48%, #02070d);
-      color: var(--text);
-      font-family: Arial, Helvetica, sans-serif;
-      letter-spacing: 0.02em;
-      padding: 24px;
-    }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        padding: 2rem 1rem;
+        background: linear-gradient(180deg, #020817 0%, #0f172a 100%);
+        color: var(--text);
+        font-family: Arial, Helvetica, sans-serif;
+      }
 
-    .frame {
-      position: relative;
-      max-width: 1280px;
-      margin: 0 auto;
-      border: 3px solid var(--gold);
-      border-radius: 10px;
-      background: linear-gradient(180deg, rgba(13,23,35,.95), rgba(7,14,24,.96));
-      box-shadow: 0 0 0 3px rgba(17,26,38,.9), 0 18px 50px rgba(0,0,0,.5);
-      overflow: hidden;
-    }
+      .shell {
+        max-width: 1280px;
+        margin: 0 auto;
+        border: 2px solid var(--border);
+        border-radius: 1.25rem;
+        background: rgba(15, 23, 42, 0.96);
+        box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+        padding: 1.5rem;
+      }
 
-    .frame::before, .frame::after {
-      content: "";
-      position: absolute;
-      inset: 8px 10px auto 10px;
-      height: 10px;
-      background: linear-gradient(90deg, rgba(255,255,255,.04), rgba(243,215,122,.38), rgba(255,255,255,.02));
-      pointer-events: none;
-    }
+      .header {
+        text-align: center;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 1.5rem;
+      }
 
-    .hud {
-      position: relative;
-      padding: 18px 18px 12px;
-    }
+      .title {
+        font-size: clamp(2rem, 4vw, 3rem);
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        color: var(--gold);
+        margin: 0;
+      }
 
-    .topbar {
-      display: grid;
-      grid-template-columns: 1.3fr 0.7fr;
-      align-items: center;
-      gap: 16px;
-      background: linear-gradient(180deg, rgba(90, 21, 30, 0.9), rgba(48, 11, 18, 0.95));
-      border: 3px solid var(--gold);
-      border-radius: 10px;
-      padding: 16px 18px;
-      min-height: 92px;
-      box-shadow: inset 0 0 20px rgba(0,0,0,.22);
-    }
+      .subtitle {
+        color: var(--muted);
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+      }
 
-    .character-name {
-      font-size: clamp(2rem, 3vw, 3.5rem);
-      font-weight: 800;
-      line-height: 1;
-      color: #f7f0ff;
-      font-family: Georgia, 'Times New Roman', serif;
-      letter-spacing: 0.04em;
-      text-shadow: 0 0 10px rgba(0,0,0,.35);
-    }
+      .hero-row {
+        display: grid;
+        grid-template-columns: 180px 1fr;
+        gap: 1.25rem;
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid var(--border);
+        border-radius: 1rem;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+      }
 
-    .level-box {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 10px;
-      min-height: 60px;
-      font-size: clamp(1.8rem, 2.2vw, 3rem);
-      font-weight: 800;
-      color: var(--gold);
-      font-family: Georgia, serif;
-      text-shadow: 0 0 12px rgba(243,215,122,.4);
-      letter-spacing: 0.04em;
-    }
+      .portrait-box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
 
-    .main-grid {
-      display: grid;
-      grid-template-columns: 1.6fr 0.9fr;
-      gap: 18px;
-      margin-top: 18px;
-    }
+      .portrait {
+        width: 128px;
+        height: 128px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.9rem;
+        border: 2px solid rgba(250, 204, 21, 0.8);
+        background: linear-gradient(135deg, rgba(245,158,11,.18), rgba(15, 23, 42, 1));
+        font-size: 4rem;
+        overflow: hidden;
+        box-shadow: inset 0 0 25px rgba(0,0,0,.2);
+      }
 
-    .panel {
-      background: linear-gradient(180deg, rgba(17, 31, 53, 0.96), rgba(11, 20, 32, 0.96));
-      border: 3px solid var(--gold);
-      border-radius: 10px;
-      box-shadow: inset 0 0 25px rgba(0,0,0,.2);
-    }
+      .portrait img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
 
-    .stats-panel {
-      padding: 16px;
-    }
+      .upload-btn {
+        margin-top: 0.75rem;
+        cursor: pointer;
+        border-radius: 0.6rem;
+        background: #374151;
+        color: #e5e7eb;
+        font-weight: 700;
+        padding: 0.5rem 0.9rem;
+        font-size: 0.72rem;
+        letter-spacing: 0.04em;
+      }
 
-    .stat-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(180px, 1fr));
-      gap: 14px 18px;
-    }
+      .remove-btn {
+        margin-top: 0.4rem;
+        font-size: 0.72rem;
+        color: #fca5a5;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        display: none;
+      }
 
-    .stat-box {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      min-height: 64px;
-      padding: 12px 14px;
-      border-radius: 8px;
-      background: linear-gradient(180deg, rgba(22,38,63,.8), rgba(15,27,42,.8));
-      border: 1px solid rgba(243,215,122,.34);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.07);
-    }
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(200px, 1fr));
+        gap: 1rem;
+      }
 
-    .stat-label {
-      color: var(--gold);
-      font-weight: 800;
-      font-size: clamp(1.2rem, 1.8vw, 2rem);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-family: Georgia, serif;
-      text-shadow: 0 0 8px rgba(243,215,122,.12);
-    }
+      .label {
+        display: block;
+        margin-bottom: 0.35rem;
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
 
-    .stat-value {
-      color: var(--text);
-      font-size: clamp(1.25rem, 1.6vw, 2rem);
-      font-weight: 800;
-      font-family: Arial, Helvetica, sans-serif;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+      .input, .num, select, textarea {
+        width: 100%;
+        border-radius: 0.55rem;
+        border: 1px solid var(--border);
+        background: #334155;
+        color: white;
+        padding: 0.6rem 0.7rem;
+        outline: none;
+      }
 
-    .gain-badge {
-      color: var(--green);
-      font-weight: 900;
-      font-size: 1.2rem;
-      opacity: 0;
-      transform: translateY(6px);
-      transition: opacity 0.18s ease, transform 0.18s ease;
-    }
+      .input:focus, .num:focus, select:focus, textarea:focus {
+        border-color: var(--gold);
+        box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.12);
+      }
 
-    .gain-badge.show {
-      opacity: 1;
-      transform: translateY(0);
-      animation: gainPop .8s ease-out forwards;
-    }
+      .input.full-span { grid-column: 1 / -1; }
 
-    @keyframes gainPop {
-      0% { opacity: 0; transform: translateY(8px) scale(.8); }
-      18% { opacity: 1; transform: translateY(0) scale(1); }
-      100% { opacity: 0; transform: translateY(-12px) scale(1); }
-    }
+      .banner-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid var(--border);
+        border-radius: 1rem;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1.5rem;
+      }
 
-    .portrait-panel {
-      overflow: hidden;
-      position: relative;
-      min-height: 420px;
-      background: linear-gradient(180deg, rgba(12,20,32,.7), rgba(12,25,34,.88));
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-    }
+      .level-box {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: var(--gold);
+        font-weight: 900;
+        font-size: 1.8rem;
+      }
 
-    .portrait-panel::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at 50% 15%, rgba(164,205,255,.15), rgba(0,0,0,0) 32%);
-      pointer-events: none;
-    }
+      .button-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem;
+      }
 
-    .portrait-figure {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: clamp(6rem, 12vw, 14rem);
-      filter: drop-shadow(0 18px 16px rgba(0,0,0,.35));
-      user-select: none;
-      position: relative;
-      z-index: 1;
-      text-shadow: 0 0 30px rgba(65,120,255,.32);
-    }
+      button {
+        border: none;
+        border-radius: 0.65rem;
+        padding: 0.72rem 1rem;
+        font-weight: 800;
+        cursor: pointer;
+        transition: transform 0.12s ease, filter 0.12s ease;
+      }
 
-    .portrait-figure img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      opacity: 0.92;
-      filter: saturate(1.06) contrast(1.04);
-    }
+      button:hover { filter: brightness(1.05); }
+      button:active { transform: translateY(1px); }
 
-    .controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      padding: 16px 18px 18px;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: 18px;
-      background: rgba(10, 18, 30, 0.7);
-      border: 2px solid rgba(243,215,122,.25);
-      border-radius: 10px;
-    }
+      .btn-primary { background: linear-gradient(180deg, #facc15, #d97706); color: #111827; }
+      .btn-green { background: linear-gradient(180deg, #22c55e, #16a34a); color: white; }
+      .btn-blue { background: linear-gradient(180deg, #3b82f6, #2563eb); color: white; }
+      .btn-slate { background: linear-gradient(180deg, #475569, #334155); color: white; }
+      .btn-red { background: linear-gradient(180deg, #ef4444, #b91c1c); color: white; }
 
-    .button-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-    }
+      .stats-panel {
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid var(--border);
+        border-radius: 1rem;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+      }
 
-    .btn {
-      appearance: none;
-      border: none;
-      border-radius: 8px;
-      font-weight: 800;
-      padding: 10px 16px;
-      cursor: pointer;
-      transition: transform 0.12s ease, filter 0.12s ease;
-      color: #f5f7ff;
-      background: #2b3d5f;
-      border: 1px solid rgba(243,215,122,.3);
-    }
+      .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 0.8rem;
+      }
 
-    .btn:hover { filter: brightness(1.08); }
-    .btn:active { transform: translateY(1px); }
+      .stat-card {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.9rem 1rem;
+        border: 1px solid rgba(250, 204, 21, 0.25);
+        border-radius: 0.7rem;
+        background: rgba(30, 41, 59, 0.8);
+      }
 
-    .btn-gold { background: linear-gradient(180deg, #f2d77f, #d9a53a); color: #101826; }
-    .btn-green { background: linear-gradient(180deg, #2ac76b, #1f9d54); }
-    .btn-blue { background: linear-gradient(180deg, #4e6ab8, #33519a); }
-    .btn-slate { background: linear-gradient(180deg, #4e5d76, #37465f); }
-    .btn-red { background: linear-gradient(180deg, #d65262, #b63544); }
+      .stat-name {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: var(--gold);
+      }
 
-    .field {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--muted);
-      font-weight: 700;
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
+      .stat-value-wrap {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
 
-    .field input,
-    .field select {
-      width: 4.75rem;
-      padding: 8px 10px;
-      border-radius: 6px;
-      border: 1px solid rgba(243,215,122,.3);
-      background: rgba(17, 30, 47, 0.9);
-      color: white;
-      font-weight: 700;
-      text-align: center;
-    }
+      .stat-value {
+        font-size: 1.4rem;
+        font-weight: 900;
+      }
 
-    .settings {
-      margin-top: 18px;
-      background: rgba(10, 18, 30, 0.7);
-      border: 2px solid rgba(243,215,122,.25);
-      border-radius: 10px;
-      overflow: hidden;
-    }
+      .gain-badge {
+        color: var(--green);
+        font-weight: 900;
+        font-size: 1rem;
+        opacity: 0;
+        transform: translateY(4px);
+      }
 
-    .settings-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 18px;
-      cursor: pointer;
-      user-select: none;
-      background: rgba(17, 28, 42, 0.6);
-      border-bottom: 1px solid rgba(243,215,122,.2);
-      font-weight: 800;
-      color: var(--gold);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      font-size: 0.8rem;
-    }
+      .gain-badge.show {
+        animation: pop 0.8s ease-out forwards;
+      }
 
-    .settings-body {
-      display: none;
-      padding: 16px;
-      gap: 12px;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      align-items: start;
-    }
+      @keyframes pop {
+        0% { opacity: 0; transform: translateY(4px); }
+        20% { opacity: 1; transform: translateY(0); }
+        100% { opacity: 0; transform: translateY(-8px); }
+      }
 
-    .settings.open .settings-body { display: grid; }
+      .settings {
+        margin-bottom: 1.5rem;
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid var(--border);
+        border-radius: 1rem;
+        overflow: hidden;
+      }
 
-    .check {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 12px;
-      border-radius: 8px;
-      background: rgba(16, 27, 40, 0.7);
-      border: 1px solid rgba(243,215,122,.2);
-      color: var(--text);
-      font-weight: 700;
-      font-size: 0.85rem;
-    }
+      .settings-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.9rem 1rem;
+        background: rgba(30, 41, 59, 0.8);
+        color: var(--gold);
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        cursor: pointer;
+      }
 
-    .check input { accent-color: #f4d97a; }
+      .settings-body {
+        display: none;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 0.8rem;
+        padding: 1rem;
+      }
 
-    .select-wrap {
-      padding: 10px 12px;
-      border-radius: 8px;
-      background: rgba(16, 27, 40, 0.7);
-      border: 1px solid rgba(243,215,122,.2);
-    }
+      .settings.open .settings-body { display: grid; }
 
-    .select-wrap label {
-      display: block;
-      margin-bottom: 8px;
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--muted);
-      font-weight: 800;
-    }
+      .check {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid rgba(250, 204, 21, 0.2);
+        border-radius: 0.6rem;
+        padding: 0.75rem 0.8rem;
+        font-size: 0.82rem;
+        font-weight: 700;
+      }
 
-    .select-wrap select {
-      width: 100%;
-      padding: 8px 10px;
-      border-radius: 6px;
-      border: 1px solid rgba(243,215,122,.3);
-      background: rgba(17, 30, 47, 0.9);
-      color: white;
-      font-weight: 700;
-    }
+      .check input { accent-color: var(--gold); }
 
-    .subgrid {
-      display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
-      gap: 18px;
-      margin-top: 18px;
-    }
+      .subgrid {
+        display: grid;
+        grid-template-columns: 1.4fr 0.8fr;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
 
-    .output-panel, .history-panel, .compare-panel {
-      padding: 16px;
-    }
+      .panel {
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid var(--border);
+        border-radius: 1rem;
+        padding: 1rem;
+      }
 
-    .panel-title {
-      font-size: 1rem;
-      font-weight: 900;
-      color: var(--gold);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin: 0 0 12px;
-    }
+      .panel-title {
+        margin: 0 0 0.8rem;
+        color: var(--gold);
+        font-size: 0.82rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
 
-    textarea {
-      width: 100%;
-      min-height: 170px;
-      resize: none;
-      border-radius: 8px;
-      border: 1px solid rgba(243,215,122,.25);
-      background: rgba(10, 18, 30, 0.9);
-      color: #acffbf;
-      padding: 12px;
-      font-family: "SFMono-Regular", Consolas, monospace;
-      font-size: 0.85rem;
-    }
+      textarea {
+        min-height: 170px;
+        resize: vertical;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.82rem;
+        background: rgba(15, 23, 42, 0.9);
+        color: #bbf7d0;
+      }
 
-    .history-wrap {
-      max-height: 200px;
-      overflow: auto;
-      display: grid;
-      gap: 8px;
-    }
+      .history-list {
+        display: grid;
+        gap: 0.6rem;
+        max-height: 250px;
+        overflow-y: auto;
+      }
 
-    .history-item {
-      padding: 10px 12px;
-      border-radius: 8px;
-      background: rgba(17, 28, 42, 0.7);
-      border: 1px solid rgba(243,215,122,.18);
-    }
+      .history-item {
+        background: rgba(30, 41, 59, 0.7);
+        border: 1px solid rgba(250, 204, 21, 0.15);
+        border-radius: 0.7rem;
+        padding: 0.6rem 0.7rem;
+        font-size: 0.8rem;
+      }
 
-    .history-item strong { color: var(--gold); }
+      .compare-box {
+        margin-top: 1.5rem;
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid var(--border);
+        border-radius: 1rem;
+        padding: 1rem;
+      }
 
-    .compare-wrap table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.9rem;
-    }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+      }
 
-    .compare-wrap th, .compare-wrap td {
-      padding: 8px 10px;
-      border-bottom: 1px solid rgba(243,215,122,.15);
-      text-align: center;
-    }
+      th, td {
+        padding: 0.6rem 0.5rem;
+        border-bottom: 1px solid rgba(250, 204, 21, 0.15);
+        text-align: left;
+      }
 
-    .compare-wrap th:first-child, .compare-wrap td:first-child { text-align: left; }
+      .file-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-top: 1rem;
+      }
 
-    .file-panel {
-      margin-top: 18px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      padding: 16px;
-      background: rgba(10, 18, 30, 0.7);
-      border: 2px solid rgba(243,215,122,.25);
-      border-radius: 10px;
-      align-items: center;
-    }
+      .file-label {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(180deg, #475569, #334155);
+        color: white;
+        border-radius: 0.65rem;
+        padding: 0.72rem 1rem;
+        font-weight: 800;
+        cursor: pointer;
+      }
 
-    .file-panel .btn { padding: 10px 14px; }
+      .file-label input { display: none; }
 
-    label.file-button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 10px 14px;
-      border-radius: 8px;
-      border: 1px solid rgba(243,215,122,.3);
-      background: linear-gradient(180deg, #4e5d76, #37465f);
-      color: white;
-      font-weight: 800;
-      cursor: pointer;
-    }
+      .level-popup {
+        position: fixed;
+        inset: 0;
+        display: none;
+        place-items: center;
+        background: rgba(2, 8, 23, 0.7);
+        z-index: 50;
+      }
 
-    .file-button input { display: none; }
+      .level-popup.show { display: grid; }
 
-    .level-popup {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: rgba(3,7,14,.6);
-      z-index: 99;
-      backdrop-filter: blur(2px);
-    }
+      .popup-card {
+        width: min(600px, 90vw);
+        border: 2px solid var(--gold);
+        background: rgba(15, 23, 42, 0.97);
+        border-radius: 1rem;
+        padding: 1.2rem;
+        text-align: center;
+      }
 
-    .level-popup.show { display: flex; }
+      .popup-title {
+        color: var(--gold);
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        font-weight: 800;
+        font-size: 0.8rem;
+      }
 
-    .popup-card {
-      width: min(700px, 90vw);
-      background: linear-gradient(180deg, rgba(20, 31, 45, 0.98), rgba(14, 22, 30, 0.98));
-      border: 3px solid var(--gold);
-      border-radius: 14px;
-      box-shadow: 0 18px 40px rgba(0,0,0,.5);
-      padding: 18px 20px 16px;
-      text-align: center;
-    }
+      .popup-level {
+        font-size: clamp(2rem, 5vw, 3.25rem);
+        font-weight: 900;
+        color: var(--gold);
+        margin: 0.5rem 0 1rem;
+      }
 
-    .popup-tag {
-      color: var(--gold);
-      text-transform: uppercase;
-      letter-spacing: 0.2em;
-      font-size: 0.9rem;
-      font-weight: 900;
-    }
+      .popup-gains {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.5rem;
+      }
 
-    .popup-level {
-      margin-top: 8px;
-      font-size: clamp(2rem, 5vw, 4rem);
-      color: var(--gold);
-      font-family: Georgia, serif;
-      font-weight: 900;
-    }
+      .popup-gain {
+        display: inline-block;
+        background: rgba(34, 197, 94, 0.12);
+        border: 1px solid rgba(34, 197, 94, 0.7);
+        color: #dcfce7;
+        padding: 0.45rem 0.7rem;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 800;
+      }
 
-    .popup-gains {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 18px;
-      min-height: 56px;
-      align-items: center;
-    }
+      @media (max-width: 768px) {
+        .hero-row { grid-template-columns: 1fr; }
+        .form-grid { grid-template-columns: 1fr; }
+        .subgrid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="header">
+        <h1 class="title">🛡️ FE STAT GROWTH SIMULATOR</h1>
+        <p class="subtitle">Customize your character, class, portrait, and simulate growths over time.</p>
+      </header>
 
-    .popup-gain {
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: rgba(40, 115, 70, 0.18);
-      border: 1px solid rgba(89,227,109,.7);
-      color: #bafec7;
-      font-weight: 800;
-      font-size: 0.95rem;
-    }
-
-    .popup-btn {
-      margin-top: 18px;
-      padding: 12px 28px;
-      border-radius: 8px;
-      border: none;
-      background: linear-gradient(180deg, #f2d77f, #d9a53a);
-      color: #101826;
-      font-weight: 900;
-      cursor: pointer;
-    }
-
-    @media (max-width: 900px) {
-      .main-grid, .subgrid { grid-template-columns: 1fr; }
-      .portrait-panel { min-height: 260px; }
-    }
-
-    @media (max-width: 640px) {
-      body { padding: 12px; }
-      .topbar { grid-template-columns: 1fr; }
-      .stat-grid { grid-template-columns: 1fr; }
-      .controls { flex-direction: column; align-items: stretch; }
-      .button-row { width: 100%; }
-      .button-row .btn { flex: 1; }
-      .field { width: 100%; justify-content: space-between; }
-      .field input { width: 72px; }
-    }
-  </style>
-</head>
-<body>
-  <div class="frame">
-    <div class="hud">
-      <div class="topbar">
-        <div class="character-name" id="heroName">Lord</div>
-        <div class="level-box">Lv <span id="level">1</span></div>
-      </div>
-
-      <div class="main-grid">
-        <div class="panel stats-panel">
-          <div id="statGrid" class="stat-grid"></div>
+      <section class="hero-row">
+        <div class="portrait-box">
+          <div id="portrait" class="portrait">🧙</div>
+          <label for="portraitInput" class="upload-btn">Upload Portrait</label>
+          <input id="portraitInput" type="file" accept="image/*" hidden />
+          <button id="removePortrait" class="remove-btn" type="button">Remove Portrait</button>
         </div>
 
-        <div class="panel portrait-panel">
-          <div id="portrait" class="portrait-figure">🧙</div>
-        </div>
-      </div>
-
-      <div class="controls">
-        <div class="button-row">
-          <button id="levelUp" class="btn btn-gold">Level Up</button>
-          <button id="simulate" class="btn btn-green">Simulate</button>
-          <button id="apply" class="btn btn-blue">Apply Growths</button>
-          <button id="reset" class="btn btn-slate">Reset</button>
-        </div>
-
-        <div class="button-row">
-          <label class="field">
-            <span>Levels</span>
-            <input id="amount" type="number" min="1" value="1" />
+        <div class="form-grid">
+          <label>
+            <span class="label">Title / Role</span>
+            <input id="title" class="input" type="text" value="Lord" />
           </label>
-          <button id="soundToggle" class="btn btn-slate">🔊 Sound</button>
-        </div>
-      </div>
 
-      <div class="settings" id="settingsPanel">
+          <label>
+            <span class="label">Character Name</span>
+            <input id="name" class="input" type="text" value="Eve" />
+          </label>
+
+          <label>
+            <span class="label">Game Preset</span>
+            <select id="gameSelect" class="input">
+              <option value="generic">Generic</option>
+              <option value="fe7">FE7</option>
+              <option value="fe8">FE8</option>
+              <option value="fe9">FE9</option>
+              <option value="fe10">FE10</option>
+              <option value="fe13">FE13</option>
+              <option value="fe14">FE14</option>
+              <option value="fe16">FE16</option>
+            </select>
+          </label>
+
+          <label>
+            <span class="label">Class</span>
+            <select id="class" class="input">
+              <option value="custom">Custom</option>
+              <option value="Lord">Lord</option>
+              <option value="Cavalier">Cavalier</option>
+              <option value="Knight">Knight</option>
+              <option value="Mage">Mage</option>
+              <option value="Myrmidon">Myrmidon</option>
+              <option value="Thief">Thief</option>
+              <option value="Cleric">Cleric</option>
+              <option value="Archer">Archer</option>
+            </select>
+          </label>
+
+          <div class="button-row full-span">
+            <button id="apply" class="btn-primary" type="button">Apply Class Growths</button>
+            <button id="sound" class="btn-slate" type="button">🔊 Sound On</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="banner-row">
+        <div class="level-box">Lv <span id="level">1</span></div>
+
+        <div class="button-row">
+          <label>
+            <span class="label">Levels</span>
+            <input id="amount" class="num" type="number" min="1" value="1" />
+          </label>
+          <button id="simulate" class="btn-green" type="button">Simulate</button>
+          <button id="levelUp" class="btn-primary" type="button">Level Up</button>
+          <button id="reset" class="btn-slate" type="button">Reset</button>
+        </div>
+      </section>
+
+      <section class="stats-panel">
+        <div id="statGrid" class="stat-grid"></div>
+      </section>
+
+      <section class="settings" id="settingsPanel">
         <div class="settings-head" id="settingsToggle">
           <span>Advanced Settings</span>
           <span id="settingsText">Show</span>
         </div>
         <div class="settings-body">
-          <label class="check"><input id="settingStatCaps" type="checkbox" /> Enable stat caps</label>
-          <label class="check"><input id="settingClassGrowths" type="checkbox" checked /> Enable class growths</label>
-          <label class="check"><input id="settingExpectedValues" type="checkbox" checked /> Show expected values</label>
-          <label class="check"><input id="settingHistory" type="checkbox" checked /> Show level history</label>
-          <label class="check"><input id="settingGameRules" type="checkbox" /> Use game-specific rules</label>
-          <label class="check"><input id="settingPromotion" type="checkbox" /> Enable promotion mode</label>
-          <label class="check"><input id="settingSound" type="checkbox" checked /> Level-up sound</label>
-          <div class="select-wrap">
-            <label for="settingCapMode">Stat cap mode</label>
-            <select id="settingCapMode">
-              <option value="off">Off</option>
-              <option value="generic">Standard</option>
-            </select>
-          </div>
+          <label class="check"><input id="statCaps" type="checkbox" /> Enable stat caps</label>
+          <label class="check"><input id="classGrowths" type="checkbox" checked /> Enable class growths</label>
+          <label class="check"><input id="expectedValues" type="checkbox" checked /> Show expected values</label>
+          <label class="check"><input id="historyToggle" type="checkbox" checked /> Show level history</label>
+          <label class="check"><input id="gameRules" type="checkbox" /> Use game-specific rules</label>
+          <label class="check"><input id="promotionMode" type="checkbox" /> Promotion mode</label>
         </div>
-      </div>
+      </section>
 
       <div class="subgrid">
-        <div class="panel output-panel">
+        <div class="panel">
           <h3 class="panel-title">Discord Ready Output</h3>
-          <button id="copy" class="btn btn-gold" style="margin-bottom:10px;">Copy Text</button>
+          <button id="copy" class="btn-blue" type="button" style="margin-bottom:0.75rem;">Copy Text</button>
           <textarea id="output" readonly></textarea>
         </div>
 
-        <div class="panel history-panel" id="historyPanel">
+        <div class="panel">
           <h3 class="panel-title">Level History</h3>
-          <div id="history" class="history-wrap"></div>
+          <div id="history" class="history-list"></div>
         </div>
       </div>
 
-      <div class="panel compare-panel" style="margin-top:18px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
-          <h3 class="panel-title" style="margin:0;">Compare Builds</h3>
-          <div class="button-row">
-            <button id="saveCompare" class="btn btn-slate">Save Build</button>
-            <button id="compare" class="btn btn-blue">Compare</button>
-          </div>
+      <div class="compare-box">
+        <div class="button-row" style="margin-bottom:0.9rem;">
+          <button id="saveCompare" class="btn-slate" type="button">Save Build</button>
+          <button id="compare" class="btn-blue" type="button">Compare</button>
         </div>
-        <div id="comparison" class="compare-wrap">No comparison saved yet.</div>
+        <div id="comparison">No comparison saved yet.</div>
       </div>
 
-      <div class="file-panel">
-        <button id="export" class="btn btn-blue">Export JSON</button>
-        <label class="file-button">
+      <div class="file-bar">
+        <button id="export" class="btn-blue" type="button">Export JSON</button>
+        <label class="file-label">
           Import JSON
-          <input type="file" id="import" accept="application/json" />
+          <input id="import" type="file" accept="application/json" />
         </label>
-        <button id="save" class="btn btn-green">Save Build</button>
-        <button id="load" class="btn btn-slate">Load Build</button>
+        <button id="save" class="btn-green" type="button">Save Build</button>
+        <button id="load" class="btn-slate" type="button">Load Build</button>
       </div>
     </div>
-  </div>
 
-  <div id="popup" class="level-popup" aria-live="polite">
-    <div class="popup-card">
-      <div class="popup-tag">Level Up</div>
-      <div class="popup-level" id="popupLevel">Lv 2</div>
-      <div class="popup-gains" id="popupGains"></div>
-      <button id="closePopup" class="popup-btn">Continue</button>
+    <div id="popup" class="level-popup" aria-live="polite">
+      <div class="popup-card">
+        <div class="popup-title">Level Up</div>
+        <div id="popupLevel" class="popup-level">Lv 2</div>
+        <div id="popupGains" class="popup-gains"></div>
+        <button id="closePopup" class="btn-primary" type="button" style="margin-top:1rem;">Continue</button>
+      </div>
     </div>
-  </div>
 
-  <script>
-    const data = [
-      ['hp', 'HP', 22, 65],
-      ['str', 'Str', 7, 50],
-      ['mag', 'Mag', 1, 10],
-      ['skl', 'Skl', 8, 55],
-      ['spd', 'Spd', 9, 50],
-      ['lck', 'Lck', 7, 45],
-      ['def', 'Def', 6, 35],
-      ['res', 'Res', 2, 25]
-    ];
+    <script>
+      const statMeta = [
+        ['hp', 'HP', 22, 65],
+        ['str', 'Str', 7, 50],
+        ['mag', 'Mag', 1, 10],
+        ['skl', 'Skl', 8, 55],
+        ['spd', 'Spd', 9, 50],
+        ['lck', 'Lck', 7, 45],
+        ['def', 'Def', 6, 35],
+        ['res', 'Res', 2, 25],
+      ];
 
-    const classRates = {
-      Lord: [65,50,10,55,50,45,35,25],
-      Cavalier: [70,45,5,45,45,35,40,15],
-      Knight: [80,55,0,35,15,25,65,5],
-      Mage: [45,10,70,45,40,35,10,55],
-      Myrmidon: [50,40,5,65,70,45,20,15],
-      Thief: [45,35,5,50,65,60,15,25],
-      Cleric: [40,5,65,35,35,50,10,65],
-      Archer: [55,45,5,70,40,35,25,15]
-    };
+      const classGrowths = {
+        Lord: [65, 50, 10, 55, 50, 45, 35, 25],
+        Cavalier: [70, 45, 5, 45, 45, 35, 40, 15],
+        Knight: [80, 55, 0, 35, 15, 25, 65, 5],
+        Mage: [45, 10, 70, 45, 40, 35, 10, 55],
+        Myrmidon: [50, 40, 5, 65, 70, 45, 20, 15],
+        Thief: [45, 35, 5, 50, 65, 60, 15, 25],
+        Cleric: [40, 5, 65, 35, 35, 50, 10, 65],
+        Archer: [55, 45, 5, 70, 40, 35, 25, 15],
+      };
 
-    const capDefaults = { hp: 60, str: 30, mag: 30, skl: 30, spd: 30, lck: 30, def: 30, res: 30 };
-    const defaultSettings = {
-      statCapsEnabled: false,
-      classGrowthsEnabled: true,
-      gameRulesEnabled: false,
-      promotionEnabled: false,
-      showExpectedValues: true,
-      showHistory: true,
-      soundEnabled: true,
-      statCapMode: 'off'
-    };
+      const defaultStats = {};
+      statMeta.forEach(([key, label, base, growth]) => { defaultStats[key] = base; });
 
-    let settings = { ...defaultSettings };
-    let level = 1;
-    let stats = {};
-    let history = [];
-    let savedCompare = null;
-    let audioContext = null;
+      let stats = { ...defaultStats };
+      let level = 1;
+      let history = [];
+      let savedCompare = null;
+      let soundEnabled = true;
+      let settingsOpen = false;
 
-    const $ = (id) => document.getElementById(id);
+      function setHeroName() {
+        const title = document.getElementById('title').value.trim() || 'Lord';
+        const name = document.getElementById('name').value.trim() || 'Eve';
+        document.getElementById('title').value = title;
+        document.getElementById('name').value = name;
+      }
 
-    function setHeroText() {
-      $('heroName').textContent = $('title').value.trim() || 'Lord';
-      $('title').value = $('title').value.trim() || 'Lord';
-    }
+      function getGrowthInput(key) {
+        return document.getElementById(`growth-${key}`);
+      }
 
-    function syncSettingsUI() {
-      $('settingStatCaps').checked = settings.statCapsEnabled;
-      $('settingClassGrowths').checked = settings.classGrowthsEnabled;
-      $('settingExpectedValues').checked = settings.showExpectedValues;
-      $('settingHistory').checked = settings.showHistory;
-      $('settingGameRules').checked = settings.gameRulesEnabled;
-      $('settingPromotion').checked = settings.promotionEnabled;
-      $('settingSound').checked = settings.soundEnabled;
-      $('settingCapMode').value = settings.statCapMode;
-      $('soundToggle').textContent = settings.soundEnabled ? '🔊 Sound' : '🔇 Sound';
-      $('settingsText').textContent = $('settingsPanel').classList.contains('open') ? 'Hide' : 'Show';
-      $('historyPanel').style.display = settings.showHistory ? '' : 'none';
-    }
-
-    function refreshSettingEffects() {
-      const rows = document.querySelectorAll('[data-expected]');
-      rows.forEach((row) => {
-        row.style.display = settings.showExpectedValues ? '' : 'none';
-      });
-      $('historyPanel').style.display = settings.showHistory ? '' : 'none';
-      $('history').style.display = settings.showHistory ? '' : 'none';
-      $('soundToggle').textContent = settings.soundEnabled ? '🔊 Sound' : '🔇 Sound';
-    }
-
-    function loadSettings(saved = {}) {
-      settings = { ...defaultSettings, ...saved };
-      syncSettingsUI();
-      refreshSettingEffects();
-    }
-
-    function initStatState() {
-      stats = {};
-      data.forEach(([key, label, base, growth]) => {
-        stats[key] = Number(base);
-      });
-      renderStats();
-      renderHistory();
-      updateOutput([]);
-    }
-
-    function renderStats() {
-      const statHtml = data.map(([key, label, base, growth]) => {
-        const value = stats[key] ?? base;
-        const expected = settings.showExpectedValues ? (Number(growth) / 100).toFixed(2) : '—';
-        return `
-          <div class="stat-box" data-stat="${key}">
-            <div class="stat-label">${label}</div>
-            <div class="stat-value">
-              <span>${value}</span>
+      function renderStats() {
+        const grid = document.getElementById('statGrid');
+        grid.innerHTML = statMeta.map(([key, label, base, growth]) => `
+          <div class="stat-card">
+            <div class="stat-name">${label}</div>
+            <div class="stat-value-wrap">
+              <span class="stat-value">${stats[key]}</span>
               <span class="gain-badge" data-gain="${key}">+1</span>
             </div>
-            <div class="stat-value" style="display:none;" data-expected="${key}">${expected}</div>
           </div>
-        `;
-      }).join('');
+        `).join('');
 
-      $('statGrid').innerHTML = statHtml;
-      data.forEach(([key, label, base, growth]) => {
-        const inputBase = document.createElement('input');
-        inputBase.id = `base-${key}`;
-        inputBase.type = 'number';
-        inputBase.value = base;
-        inputBase.style.display = 'none';
-        inputBase.dataset.key = key;
-
-        const inputGrowth = document.createElement('input');
-        inputGrowth.id = `growth-${key}`;
-        inputGrowth.type = 'number';
-        inputGrowth.value = growth;
-        inputGrowth.style.display = 'none';
-        inputGrowth.dataset.key = key;
-
-        document.body.appendChild(inputBase);
-        document.body.appendChild(inputGrowth);
-      });
-
-      data.forEach(([key]) => {
-        const valueNode = document.querySelector(`.stat-box[data-stat="${key}"] .stat-value span`);
-        const gainNode = document.querySelector(`[data-gain="${key}"]`);
-        if (valueNode) valueNode.textContent = stats[key];
-        if (gainNode) gainNode.textContent = '+1';
-      });
-
-      if (settings.showExpectedValues) {
-        data.forEach(([key, label, base, growth]) => {
-          const expectedNode = document.querySelector(`[data-expected="${key}"]`);
-          if (expectedNode) expectedNode.textContent = (Number(growth) / 100).toFixed(2);
-          expectedNode.style.display = '';
+        statMeta.forEach(([key, label, base, growth]) => {
+          const hidden = document.createElement('input');
+          hidden.id = `growth-${key}`;
+          hidden.type = 'hidden';
+          hidden.value = growth;
+          document.body.appendChild(hidden);
         });
       }
-    }
 
-    function applyStatCap(statKey, value) {
-      if (!settings.statCapsEnabled || settings.statCapMode === 'off') return value;
-      const cap = capDefaults[statKey] ?? 30;
-      return Math.min(value, cap);
-    }
-
-    function updateOutput(gains) {
-      const name = ($('title').value.trim() + ' ' + $('name').value.trim()).trim() || 'Character';
-      const statText = data.map(([key]) => `${key.toUpperCase()}:${stats[key]}`).join(' | ');
-      $('output').value = `**${name} reached Level ${level}!**\n⚔️ **Class:** ${$('class').value}\n✨ **Gains:** ${gains.length ? gains.join(', ') : 'No stats went up! (Empty Level)'}\n📊 **New Stats:** ${statText}`;
-    }
-
-    function showPopup(gains) {
-      $('popupLevel').textContent = `Lv ${level}`;
-      $('popupGains').innerHTML = gains.length ? gains.map(g => `<span class="popup-gain">${g}</span>`).join('') : '<span class="popup-gain">No gains</span>';
-      $('popup').classList.add('show');
-    }
-
-    function closePopup() {
-      $('popup').classList.remove('show');
-    }
-
-    function renderHistory() {
-      if (!settings.showHistory) {
-        $('history').innerHTML = '';
-        return;
-      }
-      $('history').innerHTML = history.length ? history.map(entry => `
-        <div class="history-item">
-          <strong>Level ${entry.level}</strong>
-          <div>${entry.gains.length ? entry.gains.join(', ') : 'No gains'}</div>
-        </div>
-      `).join('') : '<div class="history-item"><strong>Level 1</strong><div>No gains yet.</div></div>';
-    }
-
-    function rollLevel() {
-      const gains = [];
-      data.forEach(([key, label, base, growth]) => {
-        const rate = Number(document.getElementById(`growth-${key}`)?.value ?? growth) || 0;
-        const gain = Math.floor(rate / 100) + (Math.random() * 100 < rate % 100 ? 1 : 0);
-        if (!gain) return;
-        const newValue = applyStatCap(key, stats[key] + gain);
-        stats[key] = newValue;
-        gains.push(`+${gain} ${key.toUpperCase()}`);
-
-        const gainNode = document.querySelector(`[data-gain="${key}"]`);
-        const valueNode = document.querySelector(`.stat-box[data-stat="${key}"] .stat-value span`);
-        if (valueNode) valueNode.textContent = stats[key];
-        if (gainNode) {
-          gainNode.textContent = `+${gain}`;
-          gainNode.classList.remove('show');
-          void gainNode.offsetWidth;
-          gainNode.classList.add('show');
+      function renderHistory() {
+        const historyEl = document.getElementById('history');
+        if (!history.length) {
+          historyEl.innerHTML = '<div class="history-item"><strong>Level 1</strong><div>No gains yet.</div></div>';
+          return;
         }
-      });
-      return gains;
-    }
-
-    function levelUp() {
-      level += 1;
-      $('level').textContent = level;
-      const gains = rollLevel();
-      history.push({ level, gains });
-      updateOutput(gains);
-      renderHistory();
-      showPopup(gains);
-      if (settings.soundEnabled) playChime();
-    }
-
-    function simulate() {
-      const count = Math.max(1, Number($('amount').value) || 1);
-      for (let i = 0; i < count; i++) {
-        levelUp();
+        historyEl.innerHTML = history.map(entry => `
+          <div class="history-item">
+            <strong>Level ${entry.level}</strong>
+            <div>${entry.gains.length ? entry.gains.join(', ') : 'No gains'}</div>
+          </div>
+        `).join('');
       }
-    }
 
-    function applyClassGrowths() {
-      if (!settings.classGrowthsEnabled) return;
-      const className = $('class').value;
-      const rates = classRates[className];
-      if (!rates) return;
-      rates.forEach((rate, index) => {
-        const key = data[index][0];
-        const input = document.getElementById(`growth-${key}`);
-        if (input) input.value = rate;
-        data[index][3] = rate;
-      });
-      updateOutput([]);
-    }
-
-    function snapshot() {
-      const out = {
-        title: $('title').value,
-        name: $('name').value,
-        className: $('class').value,
-        level,
-        stats: { ...stats },
-        growths: {},
-        history,
-        settings: { ...settings }
-      };
-      data.forEach(([key]) => {
-        out.growths[key] = Number(document.getElementById(`growth-${key}`)?.value || 0);
-      });
-      return out;
-    }
-
-    function compareBuilds() {
-      if (!savedCompare) {
-        $('comparison').textContent = 'Save a comparison build first.';
-        return;
+      function updateOutput(gains) {
+        const charName = `${document.getElementById('title').value.trim()} ${document.getElementById('name').value.trim()}`.trim() || 'Character';
+        const statsText = statMeta.map(([key]) => `${key.toUpperCase()}:${stats[key]}`).join(' | ');
+        const output = `**${charName} reached Level ${level}!**\n⚔️ **Class:** ${document.getElementById('class').value}\n✨ **Gains:** ${gains.length ? gains.join(', ') : 'No stats went up!'}\n📊 **New Stats:** ${statsText}`;
+        document.getElementById('output').value = output;
       }
-      const rows = data.map(([key, label]) => {
-        const oldValue = savedCompare.stats[key] ?? 0;
-        const newValue = stats[key] ?? 0;
-        const delta = newValue - oldValue;
-        return `
-          <tr>
-            <td>${label}</td>
-            <td>${oldValue}</td>
-            <td>${newValue}</td>
-            <td style="color:${delta >= 0 ? '#8ef0a6' : '#ff8d90'}; font-weight:800;">${delta >= 0 ? '+' : ''}${delta}</td>
-          </tr>
-        `;
-      }).join('');
 
-      $('comparison').innerHTML = `
-        <table>
-          <thead>
-            <tr>
-              <th>Stat</th>
-              <th>Saved</th>
-              <th>Current</th>
-              <th>Diff</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      `;
-    }
-
-    function playChime() {
-      audioContext ||= new AudioContext();
-      const start = audioContext.currentTime;
-      const notes = [523.25, 659.25, 783.99];
-      notes.forEach((freq, i) => {
-        const osc = audioContext.createOscillator();
-        const gain = audioContext.createGain();
-        const t = start + i * 0.09;
-        osc.type = 'triangle';
-        osc.frequency.value = freq;
-        osc.connect(gain);
-        gain.connect(audioContext.destination);
-        gain.gain.setValueAtTime(0, t);
-        gain.gain.linearRampToValueAtTime(0.12, t + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-        osc.start(t);
-        osc.stop(t + 0.32);
-      });
-    }
-
-    function loadState(saved) {
-      if (!saved) return;
-      $('title').value = saved.title || 'Lord';
-      $('name').value = saved.name || 'Eve';
-      $('class').value = saved.className || 'custom';
-      level = saved.level || 1;
-      history = saved.history || [];
-      loadSettings(saved.settings || {});
-      renderStats();
-      data.forEach(([key, label, base, growth]) => {
-        const growthInput = document.getElementById(`growth-${key}`);
-        if (growthInput) growthInput.value = saved.growths?.[key] ?? growth;
-      });
-      data.forEach(([key]) => {
-        stats[key] = saved.stats?.[key] ?? 0;
-        const valueNode = document.querySelector(`.stat-box[data-stat="${key}"] .stat-value span`);
-        if (valueNode) valueNode.textContent = stats[key];
-      });
-      $('level').textContent = level;
-      updateOutput([]);
-      renderHistory();
-    }
-
-    function wireEvents() {
-      $('levelUp').onclick = levelUp;
-      $('simulate').onclick = simulate;
-      $('apply').onclick = applyClassGrowths;
-      $('reset').onclick = () => {
-        level = 1;
-        history = [];
-        data.forEach(([key, label, base, growth]) => {
-          stats[key] = Number(base);
-          const inputGrowth = document.getElementById(`growth-${key}`);
-          if (inputGrowth) inputGrowth.value = growth;
-          const valueNode = document.querySelector(`.stat-box[data-stat="${key}"] .stat-value span`);
-          if (valueNode) valueNode.textContent = base;
+      function playChime() {
+        if (!soundEnabled) return;
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const notes = [523.25, 659.25, 783.99];
+        notes.forEach((freq, index) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          const start = ctx.currentTime + index * 0.09;
+          osc.type = 'triangle';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0, start);
+          gain.gain.linearRampToValueAtTime(0.08, start + 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + 0.28);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(start);
+          osc.stop(start + 0.3);
         });
-        $('level').textContent = level;
+      }
+
+      function showPopup(gains) {
+        document.getElementById('popupLevel').textContent = `Lv ${level}`;
+        const popupGains = document.getElementById('popupGains');
+        popupGains.innerHTML = gains.length ? gains.map(g => `<span class="popup-gain">${g}</span>`).join('') : '<span class="popup-gain">No gains</span>';
+        document.getElementById('popup').classList.add('show');
+      }
+
+      function closePopup() {
+        document.getElementById('popup').classList.remove('show');
+      }
+
+      function animateGain(key, amount) {
+        const badge = document.querySelector(`[data-gain="${key}"]`);
+        if (!badge) return;
+        badge.textContent = `+${amount}`;
+        badge.classList.remove('show');
+        void badge.offsetWidth;
+        badge.classList.add('show');
+      }
+
+      function applyGrowthsForClass() {
+        const selected = document.getElementById('class').value;
+        if (selected === 'custom') return;
+        const growthValues = classGrowths[selected];
+        if (!growthValues) return;
+        statMeta.forEach(([key], index) => {
+          const input = getGrowthInput(key);
+          if (input) input.value = growthValues[index];
+        });
+      }
+
+      function levelUpOnce() {
+        const gains = [];
+        statMeta.forEach(([key, label, base, growth], index) => {
+          const rate = Number(getGrowthInput(key)?.value ?? growth || 0);
+          const chance = Math.random() * 100;
+          const gain = chance < rate ? 1 : 0;
+          if (!gain) return;
+          stats[key] += 1;
+          gains.push(`+1 ${label}`);
+          animateGain(key, 1);
+        });
+
+        level += 1;
+        document.getElementById('level').textContent = level;
+        history.push({ level, gains });
         renderHistory();
-        updateOutput([]);
-      };
+        updateOutput(gains);
+        showPopup(gains);
+        playChime();
+      }
 
-      $('soundToggle').onclick = () => {
-        settings.soundEnabled = !settings.soundEnabled;
-        syncSettingsUI();
-      };
+      function simulateLevels() {
+        const count = Math.max(1, Number(document.getElementById('amount').value) || 1);
+        for (let i = 0; i < count; i++) {
+          levelUpOnce();
+        }
+      }
 
-      $('copy').onclick = () => navigator.clipboard.writeText($('output').value);
-      $('saveCompare').onclick = () => {
-        savedCompare = snapshot();
-        $('comparison').textContent = 'Saved. Change your build and click Compare.';
-      };
-      $('compare').onclick = compareBuilds;
-      $('save').onclick = () => localStorage.setItem('fe-build', JSON.stringify(snapshot()));
-      $('load').onclick = () => {
-        const raw = localStorage.getItem('fe-build');
+      function saveState() {
+        const payload = {
+          title: document.getElementById('title').value,
+          name: document.getElementById('name').value,
+          className: document.getElementById('class').value,
+          level,
+          stats,
+          growths: Object.fromEntries(statMeta.map(([key]) => [key, Number(getGrowthInput(key)?.value || 0)])),
+          history,
+        };
+        localStorage.setItem('fe-build-state', JSON.stringify(payload));
+      }
+
+      function loadState() {
+        const raw = localStorage.getItem('fe-build-state');
         if (!raw) return;
-        loadState(JSON.parse(raw));
-      };
-      $('export').onclick = () => {
-        const blob = new Blob([JSON.stringify(snapshot(), null, 2)], { type: 'application/json' });
+        try {
+          const state = JSON.parse(raw);
+          document.getElementById('title').value = state.title || 'Lord';
+          document.getElementById('name').value = state.name || 'Eve';
+          document.getElementById('class').value = state.className || 'custom';
+          level = state.level || 1;
+          stats = state.stats || { ...defaultStats };
+          document.getElementById('level').textContent = level;
+          history = state.history || [];
+          statMeta.forEach(([key]) => {
+            const input = getGrowthInput(key);
+            if (input) input.value = state.growths?.[key] ?? 0;
+          });
+          renderHistory();
+          updateOutput([]);
+          renderStats();
+        } catch (err) {
+          console.error('Failed to load saved build', err);
+        }
+      }
+
+      function exportJson() {
+        const payload = {
+          title: document.getElementById('title').value,
+          name: document.getElementById('name').value,
+          className: document.getElementById('class').value,
+          level,
+          stats,
+          growths: Object.fromEntries(statMeta.map(([key]) => [key, Number(getGrowthInput(key)?.value || 0)])),
+          history,
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = 'fe-build.json';
+        document.body.appendChild(a);
         a.click();
+        a.remove();
         URL.revokeObjectURL(url);
-      };
-      $('import').onchange = (event) => {
-        const file = event.target.files[0];
+      }
+
+      function importJson(file) {
         if (!file) return;
         const reader = new FileReader();
         reader.onload = () => {
-          try { loadState(JSON.parse(reader.result)); } catch { alert('Invalid JSON build file.'); }
+          try {
+            const state = JSON.parse(reader.result);
+            document.getElementById('title').value = state.title || 'Lord';
+            document.getElementById('name').value = state.name || 'Eve';
+            document.getElementById('class').value = state.className || 'custom';
+            level = state.level || 1;
+            stats = state.stats || { ...defaultStats };
+            document.getElementById('level').textContent = level;
+            history = state.history || [];
+            statMeta.forEach(([key]) => {
+              const input = getGrowthInput(key);
+              if (input) input.value = state.growths?.[key] ?? 0;
+            });
+            renderHistory();
+            updateOutput([]);
+            renderStats();
+          } catch (err) {
+            alert('Invalid JSON build file');
+          }
         };
         reader.readAsText(file);
-      };
+      }
 
-      $('settingStatCaps').onchange = () => {
-        settings.statCapsEnabled = $('settingStatCaps').checked;
-        if (settings.statCapsEnabled) settings.statCapMode = $('settingCapMode').value || 'generic';
-        else settings.statCapMode = 'off';
-        syncSettingsUI();
-      };
-      $('settingClassGrowths').onchange = () => { settings.classGrowthsEnabled = $('settingClassGrowths').checked; };
-      $('settingExpectedValues').onchange = () => { settings.showExpectedValues = $('settingExpectedValues').checked; refreshSettingEffects(); };
-      $('settingHistory').onchange = () => { settings.showHistory = $('settingHistory').checked; renderHistory(); refreshSettingEffects(); syncSettingsUI(); };
-      $('settingGameRules').onchange = () => { settings.gameRulesEnabled = $('settingGameRules').checked; };
-      $('settingPromotion').onchange = () => { settings.promotionEnabled = $('settingPromotion').checked; };
-      $('settingSound').onchange = () => { settings.soundEnabled = $('settingSound').checked; syncSettingsUI(); };
-      $('settingCapMode').onchange = () => {
-        settings.statCapMode = $('settingCapMode').value;
-        if (settings.statCapMode !== 'off') settings.statCapsEnabled = true;
-        else settings.statCapsEnabled = false;
-        syncSettingsUI();
-      };
+      function compareBuilds() {
+        if (!savedCompare) {
+          document.getElementById('comparison').textContent = 'Save a comparison build first.';
+          return;
+        }
+        const rows = statMeta.map(([key, label]) => {
+          const oldVal = savedCompare.stats[key] || 0;
+          const newVal = stats[key] || 0;
+          const diff = newVal - oldVal;
+          return `
+            <tr>
+              <td>${label}</td>
+              <td>${oldVal}</td>
+              <td>${newVal}</td>
+              <td style="color:${diff >= 0 ? '#86efac' : '#fca5a5'}; font-weight:800;">${diff >= 0 ? '+' : ''}${diff}</td>
+            </tr>
+          `;
+        }).join('');
 
-      $('settingsToggle').onclick = () => {
-        const panel = $('settingsPanel');
-        panel.classList.toggle('open');
-        syncSettingsUI();
-      };
+        document.getElementById('comparison').innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Stat</th>
+                <th>Saved</th>
+                <th>Current</th>
+                <th>Diff</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        `;
+      }
 
-      $('class').onchange = () => {
-        if (settings.classGrowthsEnabled && $('class').value !== 'custom') applyClassGrowths();
+      function resetAll() {
+        level = 1;
+        stats = { ...defaultStats };
+        history = [];
+        document.getElementById('level').textContent = level;
+        statMeta.forEach(([key, label, base, growth]) => {
+          const input = getGrowthInput(key);
+          if (input) input.value = growth;
+        });
+        renderHistory();
         updateOutput([]);
-      };
+        renderStats();
+      }
 
-      $('title').oninput = () => setHeroText();
-      $('name').oninput = () => setHeroText();
-      $('closePopup').onclick = closePopup;
+      function toggleSettings() {
+        settingsOpen = !settingsOpen;
+        const panel = document.getElementById('settingsPanel');
+        panel.classList.toggle('open', settingsOpen);
+        document.getElementById('settingsText').textContent = settingsOpen ? 'Hide' : 'Show';
+      }
 
-      $('portraitInput') && $('portraitInput').addEventListener('change', (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          $('portrait').innerHTML = `<img src="${e.target.result}" alt="Portrait" />`;
-        };
-        reader.readAsDataURL(file);
-      });
+      function setup() {
+        renderStats();
+        renderHistory();
+        updateOutput([]);
 
-      $('removePortrait') && $('removePortrait').addEventListener('click', () => {
-        $('portrait').textContent = '🧙';
-        $('portraitInput').value = '';
-      });
-    }
+        document.getElementById('settingsToggle').addEventListener('click', toggleSettings);
+        document.getElementById('sound').addEventListener('click', () => {
+          soundEnabled = !soundEnabled;
+          document.getElementById('sound').textContent = soundEnabled ? '🔊 Sound On' : '🔇 Sound Off';
+        });
+        document.getElementById('apply').addEventListener('click', () => {
+          applyGrowthsForClass();
+          updateOutput([]);
+        });
+        document.getElementById('levelUp').addEventListener('click', levelUpOnce);
+        document.getElementById('simulate').addEventListener('click', simulateLevels);
+        document.getElementById('reset').addEventListener('click', resetAll);
+        document.getElementById('copy').addEventListener('click', () => navigator.clipboard.writeText(document.getElementById('output').value));
+        document.getElementById('saveCompare').addEventListener('click', () => {
+          savedCompare = { stats: { ...stats } };
+          document.getElementById('comparison').textContent = 'Saved comparison build.';
+        });
+        document.getElementById('compare').addEventListener('click', compareBuilds);
+        document.getElementById('save').addEventListener('click', saveState);
+        document.getElementById('load').addEventListener('click', loadState);
+        document.getElementById('export').addEventListener('click', exportJson);
+        document.getElementById('import').addEventListener('change', (e) => importJson(e.target.files[0]));
+        document.getElementById('closePopup').addEventListener('click', closePopup);
+        document.getElementById('portraitInput').addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const img = document.createElement('img');
+            img.src = event.target.result;
+            const portrait = document.getElementById('portrait');
+            portrait.innerHTML = '';
+            portrait.appendChild(img);
+            document.getElementById('removePortrait').style.display = 'block';
+          };
+          reader.readAsDataURL(file);
+        });
+        document.getElementById('removePortrait').addEventListener('click', () => {
+          const portrait = document.getElementById('portrait');
+          portrait.innerHTML = '🧙';
+          document.getElementById('portraitInput').value = '';
+          document.getElementById('removePortrait').style.display = 'none';
+        });
+        document.getElementById('title').addEventListener('input', setHeroName);
+        document.getElementById('name').addEventListener('input', setHeroName);
+        document.getElementById('class').addEventListener('change', () => {
+          if (document.getElementById('class').value !== 'custom') applyGrowthsForClass();
+        });
+        document.getElementById('historyToggle').addEventListener('change', () => {
+          const visible = document.getElementById('historyToggle').checked;
+          document.getElementById('history').style.display = visible ? 'grid' : 'none';
+        });
+      }
 
-    function addPortraitControls() {
-      const portraitWrap = $('portrait');
-      portraitWrap.innerHTML = `
-        <img src="" alt="Portrait" style="display:none" />
-        <div class="portrait-figure" style="font-size:clamp(5.5rem,11vw,12rem);">🧙</div>
-      `;
-    }
-
-    function init() {
-      setHeroText();
-      loadSettings();
-      initStatState();
-      data.forEach(([key, label, base, growth]) => {
-        const inputGrowth = document.createElement('input');
-        inputGrowth.id = `growth-${key}`;
-        inputGrowth.type = 'number';
-        inputGrowth.value = growth;
-        inputGrowth.style.display = 'none';
-        document.body.appendChild(inputGrowth);
-      });
-      wireEvents();
-      renderHistory();
-      updateOutput([]);
-      $('level').textContent = level;
-    }
-
-    init();
-  </script>
-</body>
+      setup();
+    </script>
+  </body>
 </html>
