@@ -153,7 +153,6 @@
       document.querySelectorAll('[id^="expected-"]').forEach(el => {
         el.parentElement.style.display = expectedVisible ? '' : 'none';
       });
-
       $('historyPanel').style.display = settings.showHistory ? '' : 'none';
       $('sound').textContent = settings.soundEnabled ? '🔊 Sound On' : '🔇 Sound Off';
     }
@@ -171,11 +170,7 @@
         </tr>`).join('');
       data.forEach(stat => {
         $(`base-${stat[0]}`).onchange = event => updateBase(stat, event.target.value);
-        $(`growth-${stat[0]}`).oninput = event => {
-          stat[3] = Math.max(0, Number(event.target.value) || 0);
-          $('class').value = 'custom';
-          updateExpected();
-        };
+        $(`growth-${stat[0]}`).oninput = event => { stat[3] = Math.max(0, Number(event.target.value) || 0); $('class').value = 'custom'; updateExpected(); };
       });
       updateExpected();
       updateOutput([]);
@@ -229,13 +224,7 @@
         gains.push(`+${gain} ${stat[0].toUpperCase()}`);
 
         const cell = $(`cell-${stat[0]}`), current = $(`current-${stat[0]}`), gainEl = $(`gain-${stat[0]}`);
-        current.textContent = stats[stat[0]];
-        gainEl.textContent = `+${gain}`;
-        gainEl.classList.remove('gain-pop');
-        cell.classList.remove('level-up-flash');
-        void cell.offsetWidth;
-        gainEl.classList.add('gain-pop');
-        cell.classList.add('level-up-flash');
+        current.textContent = stats[stat[0]]; gainEl.textContent = `+${gain}`; gainEl.classList.remove('gain-pop'); cell.classList.remove('level-up-flash'); void cell.offsetWidth; gainEl.classList.add('gain-pop'); cell.classList.add('level-up-flash');
       });
       return gains;
     }
