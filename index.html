@@ -1,241 +1,107 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fire Emblem Stat Growth Simulator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      @keyframes levelUpGlow {
-        0% { background-color: rgba(34, 197, 94, 0.14); }
-        100% { background-color: transparent; }
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fire Emblem Stat Growth Simulator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes gain-pop { 0% { opacity: 0; transform: translateY(5px); } 20% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-8px); } }
+    @keyframes level-flash { from { background: rgba(34, 197, 94, .18); } to { background: transparent; } }
+    .gain-pop { animation: gain-pop .85s ease-out forwards; }
+    .level-flash { animation: level-flash .9s ease-out; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 px-4 py-8 font-sans text-slate-100">
+  <main class="mx-auto max-w-5xl rounded-2xl border border-slate-700 bg-slate-900/95 p-5 shadow-2xl shadow-black/30">
+    <header class="mb-6 border-b border-slate-700 pb-4 text-center">
+      <h1 class="text-3xl font-black tracking-[.16em] text-amber-400">FE STAT GROWTH</h1>
+      <p class="mt-2 text-sm text-slate-400">Build a character, simulate levels, and copy the result into Discord.</p>
+    </header>
 
-      .level-up-flash {
-        animation: levelUpGlow 0.9s ease-out;
-      }
-
-      .gain-pop {
-        animation: pop 0.8s ease-out;
-      }
-
-      @keyframes pop {
-        0% { opacity: 0; transform: translateY(4px); }
-        25% { opacity: 1; transform: translateY(0); }
-        100% { opacity: 0; transform: translateY(-8px); }
-      }
-    </style>
-  </head>
-  <body class="min-h-screen bg-slate-950 text-slate-100 px-4 py-8 font-sans">
-    <div class="mx-auto max-w-5xl rounded-2xl border border-slate-700 bg-slate-900/95 p-5 shadow-2xl shadow-slate-950/60 ring-1 ring-slate-800">
-      <header class="mb-6 border-b border-slate-700 pb-4 text-center">
-        <h1 class="text-3xl font-black tracking-[0.18em] text-amber-400">FE STAT GROWTH</h1>
-        <p class="mt-2 text-sm text-slate-400">Level up, compare gains, and copy the result into Discord.</p>
-      </header>
-
-      <div class="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-700 bg-slate-800/80 p-4">
-        <div class="flex items-center gap-5">
-          <label class="block">
-            <span class="mb-1 block text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Character</span>
-            <input id="charName" type="text" value="Marth" class="w-40 rounded-lg border border-slate-600 bg-slate-700 px-2 py-2 text-base font-semibold text-white outline-none transition focus:border-amber-400" />
-          </label>
-
-          <div class="text-center">
-            <span class="mb-1 block text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Level</span>
-            <span id="displayLevel" class="text-3xl font-black text-amber-400">1</span>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <button id="levelUpBtn" class="rounded-lg bg-emerald-600 px-5 py-3 text-base font-bold text-white shadow-lg shadow-emerald-900/40 transition hover:bg-emerald-500 active:scale-[0.98]">✨ Level Up</button>
-          <button id="resetBtn" class="rounded-lg bg-slate-700 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:bg-slate-600 active:scale-[0.98]">Reset</button>
-        </div>
+    <section class="mb-6 grid gap-5 rounded-xl border border-slate-700 bg-slate-800/70 p-4 md:grid-cols-[180px_1fr]">
+      <div class="flex flex-col items-center">
+        <div id="portrait" class="flex h-32 w-32 items-center justify-center overflow-hidden rounded-xl border-2 border-amber-400/70 bg-gradient-to-br from-amber-500/20 to-slate-950 text-6xl">🧙</div>
+        <label for="portraitInput" class="mt-3 cursor-pointer rounded-lg bg-slate-700 px-3 py-2 text-xs font-bold text-slate-100 hover:bg-slate-600">Upload Portrait</label>
+        <input id="portraitInput" type="file" accept="image/*" hidden />
+        <button id="removePortrait" type="button" class="mt-2 hidden text-xs font-semibold text-red-300 hover:text-red-200">Remove Portrait</button>
       </div>
 
-      <div class="overflow-hidden rounded-xl border border-slate-700 bg-slate-800/70">
-        <table class="w-full border-collapse text-left">
-          <thead>
-            <tr class="bg-slate-900/60 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-400">
-              <th class="p-3">Stat</th>
-              <th class="p-3 text-center">Base</th>
-              <th class="p-3 text-center">Growth</th>
-              <th class="p-3 text-center">Current</th>
-            </tr>
-          </thead>
-          <tbody id="statTableBody"></tbody>
-        </table>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <label><span class="label">Title / Role</span><input id="title" class="field" value="Lord" /></label>
+        <label><span class="label">Character Name</span><input id="charName" class="field" value="Marth" /></label>
+        <label><span class="label">Class</span><select id="classSelect" class="field"><option value="custom">Custom</option><option>Lord</option><option>Cavalier</option><option>Knight</option><option>Mage</option><option>Myrmidon</option><option>Thief</option><option>Cleric</option><option>Archer</option></select></label>
+        <div class="flex items-end gap-2"><button id="applyClass" class="button-primary w-full" type="button">Apply Class Growths</button><button id="soundBtn" class="button-muted whitespace-nowrap" type="button">🔊 Sound On</button></div>
       </div>
+    </section>
 
-      <div class="mt-6 rounded-xl border border-slate-700 bg-slate-900/70 p-4">
-        <div class="mb-3 flex items-center justify-between">
-          <label class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Discord Ready Output</label>
-          <button id="copyBtn" class="rounded-md bg-amber-500 px-3 py-1.5 text-xs font-bold text-slate-900 transition hover:bg-amber-400 active:scale-[0.98]">Copy Text</button>
-        </div>
-        <textarea id="discordOutput" readonly rows="4" class="w-full resize-none rounded-lg border border-slate-800 bg-slate-950 p-3 font-mono text-sm text-emerald-300 outline-none"></textarea>
+    <section class="mb-6 flex flex-wrap items-end justify-between gap-4 rounded-xl border border-slate-700 bg-slate-800/70 p-4">
+      <div><div class="label">Current Level</div><div class="text-4xl font-black text-amber-400">Lv <span id="level">1</span></div></div>
+      <div class="flex flex-wrap items-end gap-2">
+        <label class="w-24"><span class="label">Levels</span><input id="amount" class="field text-center" type="number" min="1" value="1" /></label>
+        <button id="simulate" class="button-green" type="button">Simulate</button>
+        <button id="levelUp" class="button-primary" type="button">✨ Level Up</button>
+        <button id="reset" class="button-muted" type="button">Reset</button>
       </div>
-    </div>
+    </section>
 
-    <script>
-      const statConfig = [
-        { id: 'hp', name: 'HP (Health)', base: 22, growth: 65 },
-        { id: 'str', name: 'Str (Strength)', base: 7, growth: 50 },
-        { id: 'mag', name: 'Mag (Magic)', base: 1, growth: 10 },
-        { id: 'skl', name: 'Skl (Skill/Dex)', base: 8, growth: 55 },
-        { id: 'spd', name: 'Spd (Speed)', base: 9, growth: 50 },
-        { id: 'lck', name: 'Lck (Luck)', base: 7, growth: 45 },
-        { id: 'def', name: 'Def (Defense)', base: 6, growth: 35 },
-        { id: 'res', name: 'Res (Resistance)', base: 2, growth: 25 }
-      ];
+    <section class="mb-6 overflow-hidden rounded-xl border border-slate-700 bg-slate-800/70">
+      <table class="w-full border-collapse"><thead><tr class="bg-slate-950/60 text-left text-[10px] font-bold uppercase tracking-[.18em] text-amber-400"><th class="p-3">Stat</th><th class="p-3 text-center">Base</th><th class="p-3 text-center">Growth</th><th class="p-3 text-center">Current</th></tr></thead><tbody id="stats"></tbody></table>
+    </section>
 
-      let currentLevel = 1;
-      let currentStats = {};
+    <section class="grid gap-5 md:grid-cols-[1.25fr_.75fr]">
+      <div class="rounded-xl border border-slate-700 bg-slate-950/60 p-4"><div class="mb-3 flex items-center justify-between"><h2 class="panel-title">Discord Ready Output</h2><button id="copy" class="button-blue px-3 py-1.5 text-xs" type="button">Copy Text</button></div><textarea id="output" readonly rows="6" class="field min-h-36 resize-none font-mono text-sm text-emerald-300"></textarea></div>
+      <div class="rounded-xl border border-slate-700 bg-slate-950/60 p-4"><div class="mb-3 flex items-center justify-between"><h2 class="panel-title">Level History</h2><button id="clearHistory" class="text-xs text-slate-400 hover:text-white" type="button">Clear</button></div><div id="history" class="max-h-56 space-y-2 overflow-y-auto"></div></div>
+    </section>
+  </main>
 
-      function renderStats() {
-        const tbody = document.getElementById('statTableBody');
-        tbody.innerHTML = '';
+  <div id="popup" class="fixed inset-0 z-50 hidden place-items-center bg-slate-950/80 p-4"><div class="w-full max-w-md rounded-2xl border-2 border-amber-400 bg-slate-900 p-6 text-center shadow-2xl"><div class="text-xs font-bold uppercase tracking-[.2em] text-amber-400">Level Up!</div><div id="popupLevel" class="my-3 text-5xl font-black text-amber-400">Lv 2</div><div id="popupGains" class="flex flex-wrap justify-center gap-2"></div><button id="closePopup" class="button-primary mt-6" type="button">Continue</button></div></div>
 
-        statConfig.forEach((stat) => {
-          currentStats[stat.id] = stat.base;
+  <script>
+    const statsMeta = [
+      ['hp', 'HP', 22, 65], ['str', 'Str', 7, 50], ['mag', 'Mag', 1, 10], ['skl', 'Skl', 8, 55],
+      ['spd', 'Spd', 9, 50], ['lck', 'Lck', 7, 45], ['def', 'Def', 6, 35], ['res', 'Res', 2, 25]
+    ];
+    const classGrowths = {
+      Lord: [65,50,10,55,50,45,35,25], Cavalier: [70,45,5,45,45,35,40,15], Knight: [80,55,0,35,15,25,65,5],
+      Mage: [45,10,70,45,40,35,10,55], Myrmidon: [50,40,5,65,70,45,20,15], Thief: [45,35,5,50,65,60,15,25],
+      Cleric: [40,5,65,35,35,50,10,65], Archer: [55,45,5,70,40,35,25,15]
+    };
+    let level = 1, stats = Object.fromEntries(statsMeta.map(([id,,base]) => [id, base])), history = [], soundEnabled = true, lastGains = [];
 
-          const row = document.createElement('tr');
-          row.className = 'border-b border-slate-700/60 transition hover:bg-slate-750/30';
+    const $ = id => document.getElementById(id);
+    const nameOf = () => `${$('title').value.trim()} ${$('charName').value.trim()}`.trim() || 'Character';
 
-          row.innerHTML = `
-            <td class="p-3 font-semibold text-slate-200">${stat.name}</td>
-            <td class="p-3 text-center">
-              <input data-base-input="${stat.id}" type="number" value="${stat.base}" min="0" class="w-20 rounded-md border border-slate-600 bg-slate-700 px-2 py-1 text-center text-sm text-white outline-none transition focus:border-amber-400" />
-            </td>
-            <td class="p-3 text-center">
-              <input data-growth-input="${stat.id}" type="number" value="${stat.growth}" min="0" max="255" class="w-20 rounded-md border border-slate-600 bg-slate-700 px-2 py-1 text-center text-sm text-amber-300 outline-none transition focus:border-amber-400" />%
-            </td>
-            <td id="current-box-${stat.id}" class="p-3 text-center">
-              <div class="relative inline-flex items-center justify-center">
-                <span id="current-${stat.id}" class="text-xl font-black text-white">${stat.base}</span>
-                <span id="gain-${stat.id}" class="absolute left-full ml-2 text-xs font-bold text-emerald-400 opacity-0">+1</span>
-              </div>
-            </td>
-          `;
+    function renderStats() {
+      $('stats').innerHTML = statsMeta.map(([id, label, base, growth]) => `<tr class="border-b border-slate-700/60 hover:bg-slate-700/20" id="row-${id}"><td class="p-3 font-bold text-slate-200">${label}</td><td class="p-3 text-center"><input data-base="${id}" class="small-field" type="number" min="0" value="${base}"></td><td class="p-3 text-center"><input data-growth="${id}" class="small-field text-amber-300" type="number" min="0" max="999" value="${growth}">%</td><td class="p-3 text-center"><span class="relative inline-block text-xl font-black" id="value-${id}">${stats[id]}<span id="gain-${id}" class="absolute left-full ml-2 whitespace-nowrap text-xs text-emerald-400 opacity-0"></span></span></td></tr>`).join('');
+      document.querySelectorAll('[data-base]').forEach(input => input.addEventListener('input', e => { const id=e.target.dataset.base; const value=Math.max(0, Number.parseInt(e.target.value,10)||0); const meta=statsMeta.find(s=>s[0]===id); meta[2]=value; if(level===1){stats[id]=value; $(`value-${id}`).textContent=value;} }));
+      document.querySelectorAll('[data-growth]').forEach(input => input.addEventListener('input', e => { const meta=statsMeta.find(s=>s[0]===e.target.dataset.growth); meta[3]=Math.max(0, Number.parseInt(e.target.value,10)||0); }));
+    }
 
-          tbody.appendChild(row);
-        });
+    function renderHistory() { $('history').innerHTML = history.length ? history.map(entry => `<div class="rounded-lg border border-slate-700 bg-slate-800/70 p-2 text-xs"><strong class="text-amber-300">Level ${entry.level}</strong><div class="mt-1 text-slate-300">${entry.gains.length ? entry.gains.join(', ') : 'No stats went up'}</div></div>`).join('') : '<div class="rounded-lg border border-dashed border-slate-700 p-4 text-center text-sm text-slate-500">No level-ups yet.</div>'; }
+    function updateOutput(gains = lastGains) { $('output').value = `**${nameOf()} reached Level ${level}!**\n⚔️ **Class:** ${$('classSelect').value}\n✨ **Gains:** ${gains.length ? gains.join(', ') : 'No stats went up!'}\n📊 **Stats:** ${statsMeta.map(([id,label]) => `${label}:${stats[id]}`).join(' | ')}`; }
+    function animateGain(id, amount) { const badge=$(`gain-${id}`); badge.textContent=`+${amount}`; badge.classList.remove('opacity-0','gain-pop'); void badge.offsetWidth; badge.classList.add('opacity-100','gain-pop'); $(`row-${id}`).classList.add('level-flash'); setTimeout(()=>{badge.classList.add('opacity-0'); badge.classList.remove('opacity-100','gain-pop'); $(`row-${id}`).classList.remove('level-flash');},900); }
+    function levelUpOnce(showPopup = true) { const gains=[]; statsMeta.forEach(([id,label,,growth])=>{ let rate=Math.max(0, Number.parseInt(document.querySelector(`[data-growth="${id}"]`).value,10)||0), amount=Math.floor(rate/100); if(Math.random()*100 < rate%100) amount++; if(amount){stats[id]+=amount; gains.push(`+${amount} ${label}`); $(`value-${id}`).textContent=stats[id]; animateGain(id,amount);} }); level++; $('level').textContent=level; lastGains=gains; history.push({level,gains}); renderHistory(); updateOutput(gains); if(showPopup) showPopup(gains); if(soundEnabled) playChime(); }
+    function simulate() { const count=Math.min(100,Math.max(1,Number.parseInt($('amount').value,10)||1)); for(let i=0;i<count;i++) levelUpOnce(false); showPopup(lastGains, count); }
+    function showPopup(gains, count=1) { $('popupLevel').textContent=count>1 ? `Lv ${level} (+${count} levels)` : `Lv ${level}`; $('popupGains').innerHTML=gains.length ? gains.map(g=>`<span class="rounded-full border border-emerald-500/70 bg-emerald-500/10 px-3 py-1 text-sm font-bold text-emerald-100">${g}</span>`).join('') : '<span class="rounded-full border border-slate-600 px-3 py-1 text-sm text-slate-300">No gains</span>'; $('popup').classList.remove('hidden'); $('popup').classList.add('grid'); }
+    function closePopup() { $('popup').classList.add('hidden'); $('popup').classList.remove('grid'); }
+    function applyClass() { const values=classGrowths[$('classSelect').value]; if(!values) return; statsMeta.forEach(([id],i)=>{document.querySelector(`[data-growth="${id}"]`).value=values[i];}); }
+    function reset() { level=1; stats=Object.fromEntries(statsMeta.map(([id,,base])=>[id,base])); history=[]; lastGains=[]; $('level').textContent=1; renderStats(); renderHistory(); updateOutput([]); closePopup(); }
+    function playChime() { try { const C=window.AudioContext||window.webkitAudioContext; if(!C) return; const ctx=new C(); [523.25,659.25,783.99].forEach((freq,i)=>{const osc=ctx.createOscillator(), gain=ctx.createGain(), start=ctx.currentTime+i*.08; osc.type='triangle'; osc.frequency.value=freq; gain.gain.setValueAtTime(.001,start); gain.gain.exponentialRampToValueAtTime(.08,start+.03); gain.gain.exponentialRampToValueAtTime(.001,start+.28); osc.connect(gain).connect(ctx.destination); osc.start(start); osc.stop(start+.3);}); } catch(e) { /* Audio is optional. */ } }
 
-        bindInputs();
-        updateDiscordText([]);
-      }
-
-      function bindInputs() {
-        statConfig.forEach((stat) => {
-          const baseInput = document.querySelector(`[data-base-input="${stat.id}"]`);
-          const growthInput = document.querySelector(`[data-growth-input="${stat.id}"]`);
-
-          baseInput.addEventListener('input', (e) => {
-            const newBase = Number.parseInt(e.target.value, 10) || 0;
-            const configItem = statConfig.find((s) => s.id === stat.id);
-            configItem.base = newBase;
-
-            if (currentLevel === 1) {
-              currentStats[stat.id] = newBase;
-              document.getElementById(`current-${stat.id}`).textContent = newBase;
-            }
-          });
-
-          growthInput.addEventListener('input', (e) => {
-            const configItem = statConfig.find((s) => s.id === stat.id);
-            configItem.growth = Number.parseInt(e.target.value, 10) || 0;
-          });
-        });
-      }
-
-      function updateDiscordText(gains) {
-        const name = document.getElementById('charName').value.trim() || 'Character';
-        const textarea = document.getElementById('discordOutput');
-
-        const gainsText = gains.length > 0 ? gains.join(', ') : 'No stats went up!';
-        const block = `**${name} reached Level ${currentLevel}!**\n✨ **Gains:** ${gainsText}\n`;
-        textarea.value = block;
-      }
-
-      function animateGain(statId, amount) {
-        const currentSpan = document.getElementById(`current-${statId}`);
-        const gainSpan = document.getElementById(`gain-${statId}`);
-        const parentBox = document.getElementById(`current-box-${statId}`);
-
-        currentSpan.textContent = currentStats[statId];
-        gainSpan.textContent = `+${amount}`;
-        gainSpan.classList.remove('opacity-0', 'gain-pop');
-        gainSpan.classList.add('opacity-100', 'gain-pop');
-        parentBox.classList.add('level-up-flash');
-
-        setTimeout(() => {
-          gainSpan.classList.remove('gain-pop');
-          gainSpan.classList.add('opacity-0');
-          parentBox.classList.remove('level-up-flash');
-        }, 850);
-      }
-
-      function levelUp() {
-        currentLevel += 1;
-        document.getElementById('displayLevel').textContent = currentLevel;
-
-        const gains = [];
-
-        statConfig.forEach((stat) => {
-          let growth = stat.growth;
-          let gained = 0;
-
-          while (growth > 0) {
-            if (growth >= 100) {
-              gained += 1;
-              growth -= 100;
-              continue;
-            }
-
-            const roll = Math.floor(Math.random() * 100) + 1;
-            if (roll <= growth) {
-              gained += 1;
-            }
-            break;
-          }
-
-          if (gained > 0) {
-            currentStats[stat.id] += gained;
-            gains.push(`+${gained} ${stat.id.toUpperCase()}`);
-            animateGain(stat.id, gained);
-          }
-        });
-
-        updateDiscordText(gains);
-      }
-
-      function resetSim() {
-        currentLevel = 1;
-        document.getElementById('displayLevel').textContent = currentLevel;
-
-        statConfig.forEach((stat) => {
-          stat.base = stat.base;
-          stat.growth = stat.growth;
-        });
-
-        currentStats = {};
-        renderStats();
-      }
-
-      document.getElementById('levelUpBtn').addEventListener('click', levelUp);
-      document.getElementById('resetBtn').addEventListener('click', resetSim);
-      document.getElementById('copyBtn').addEventListener('click', async () => {
-        const output = document.getElementById('discordOutput').value;
-        try {
-          await navigator.clipboard.writeText(output);
-          const btn = document.getElementById('copyBtn');
-          const original = btn.textContent;
-          btn.textContent = 'Copied!';
-          setTimeout(() => { btn.textContent = original; }, 1200);
-        } catch (err) {
-          console.error('Copy failed:', err);
-        }
-      });
-
-      renderStats();
-    </script>
-  </body>
+    $('levelUp').addEventListener('click',()=>levelUpOnce(true)); $('simulate').addEventListener('click',simulate); $('reset').addEventListener('click',reset); $('applyClass').addEventListener('click',applyClass); $('classSelect').addEventListener('change',()=>{if($('classSelect').value!=='custom') applyClass();}); $('closePopup').addEventListener('click',closePopup); $('popup').addEventListener('click',e=>{if(e.target===$('popup')) closePopup();}); $('soundBtn').addEventListener('click',()=>{soundEnabled=!soundEnabled; $('soundBtn').textContent=soundEnabled?'🔊 Sound On':'🔇 Sound Off';}); $('clearHistory').addEventListener('click',()=>{history=[];renderHistory();}); $('charName').addEventListener('input',()=>updateOutput(lastGains)); $('title').addEventListener('input',()=>updateOutput(lastGains)); $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('output').value);$('copy').textContent='Copied!';setTimeout(()=>$('copy').textContent='Copy Text',1200);}catch(e){$('output').select();document.execCommand('copy');}});
+    $('portraitInput').addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=ev=>{$('portrait').innerHTML=`<img src="${ev.target.result}" class="h-full w-full object-cover" alt="Character portrait">`;$('removePortrait').classList.remove('hidden');};reader.readAsDataURL(file);}); $('removePortrait').addEventListener('click',()=>{$('portrait').textContent='🧙';$('portraitInput').value='';$('removePortrait').classList.add('hidden');});
+    renderStats(); renderHistory(); updateOutput([]);
+  </script>
+  <style>
+    .label { display:block; margin-bottom:.35rem; font-size:.65rem; font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:#94a3b8; }
+    .field { width:100%; border:1px solid #475569; border-radius:.55rem; background:#334155; color:white; padding:.62rem .7rem; outline:none; }
+    .field:focus,.small-field:focus { border-color:#facc15; box-shadow:0 0 0 2px rgba(250,204,21,.12); }
+    .small-field { width:4.5rem; border:1px solid #475569; border-radius:.45rem; background:#334155; color:white; padding:.35rem .2rem; text-align:center; outline:none; }
+    .button-primary,.button-green,.button-blue,.button-muted { border-radius:.6rem; padding:.7rem 1rem; font-weight:800; transition:filter .15s,transform .1s; }
+    .button-primary { background:#facc15; color:#111827; }.button-green { background:#16a34a; color:white; }.button-blue { background:#2563eb; color:white; }.button-muted { background:#475569; color:white; }
+    .button-primary:hover,.button-green:hover,.button-blue:hover,.button-muted:hover { filter:brightness(1.12); }.button-primary:active,.button-green:active,.button-blue:active,.button-muted:active { transform:scale(.98); }
+    .panel-title { color:#facc15; font-size:.75rem; font-weight:900; letter-spacing:.14em; text-transform:uppercase; }
+  </style>
+</body>
 </html>
