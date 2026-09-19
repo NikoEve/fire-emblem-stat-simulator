@@ -1,30 +1,557 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FE Stat Growth Simulator</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>@keyframes glow{0%{background:#22c55e66}100%{background:transparent}}.flash{animation:glow .8s ease-out}</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fire Emblem Stat Growth Simulator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes glow {
+      0% { background-color: rgba(34, 197, 94, 0.5); }
+      100% { background-color: transparent; }
+    }
+
+    .flash {
+      animation: glow 0.8s ease-out;
+    }
+
+    .label {
+      display: block;
+      margin-bottom: 0.25rem;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #94a3b8;
+    }
+
+    .input, .num {
+      width: 100%;
+      border-radius: 0.5rem;
+      border: 1px solid #475569;
+      background-color: #334155;
+      color: white;
+      padding: 0.55rem 0.7rem;
+      outline: none;
+    }
+
+    .input:focus, .num:focus {
+      border-color: #fbbf24;
+    }
+
+    .num {
+      width: 5rem;
+      text-align: center;
+      padding: 0.35rem 0.4rem;
+    }
+
+    .portrait-bg {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(15, 23, 42, 1));
+    }
+  </style>
 </head>
 <body class="min-h-screen bg-slate-950 p-4 py-8 font-sans text-slate-100">
-<main class="mx-auto max-w-6xl rounded-2xl border border-slate-700 bg-slate-800 p-6 shadow-2xl">
-<header class="mb-6 border-b border-slate-700 pb-5 text-center"><h1 class="text-3xl font-extrabold tracking-wide text-amber-400">🛡️ FE STAT GROWTH SIMULATOR</h1><p class="mt-2 text-sm text-slate-400">Customize your character, class, portrait, and growth rates.</p></header>
-<section class="mb-6 grid gap-6 rounded-xl border border-slate-700 bg-slate-900/50 p-5 md:grid-cols-[180px_1fr]">
-<div class="flex flex-col items-center"><div id="portrait" class="flex h-40 w-40 items-center justify-center overflow-hidden rounded-xl border-2 border-amber-500/60 bg-slate-950 text-5xl">🧙</div><label for="portraitInput" class="mt-3 cursor-pointer rounded-lg bg-slate-700 px-4 py-2 text-sm font-bold">Upload Portrait</label><input id="portraitInput" type="file" accept="image/*" class="hidden"><button id="removePortrait" class="mt-2 hidden text-xs text-red-400">Remove Portrait</button></div>
-<div class="grid content-start gap-4 sm:grid-cols-2"><label><span class="label">Title / Role</span><input id="title" value="Lord" class="input"></label><label><span class="label">Character Name</span><input id="name" value="Eve" class="input"></label><label><span class="label">Class</span><select id="class" class="input"><option value="custom">Custom</option><option>Lord</option><option>Cavalier</option><option>Knight</option><option>Mage</option><option>Myrmidon</option><option>Thief</option><option>Cleric</option><option>Archer</option></select></label><button id="apply" class="rounded-lg bg-indigo-600 px-4 py-2 font-bold hover:bg-indigo-500">Apply Class Growths</button></div>
-</section>
-<section class="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-700 bg-slate-900/50 p-4"><div class="text-center"><span class="label">Current Level</span><b id="level" class="text-4xl text-amber-400">1</b></div><div class="flex gap-2"><button id="up" class="rounded-lg bg-emerald-600 px-6 py-3 text-lg font-bold hover:bg-emerald-500">✨ Level Up!</button><button id="reset" class="rounded-lg bg-slate-700 px-5 py-3 hover:bg-slate-600">🔄 Reset</button></div></section>
-<div class="overflow-x-auto"><table class="w-full border-collapse text-left"><thead><tr class="border-b border-slate-700 bg-slate-900/60 text-xs font-bold uppercase text-amber-400"><th class="p-3">Stat</th><th class="p-3 text-center">Base</th><th class="p-3 text-center">Growth %</th><th class="p-3 text-center">Current</th></tr></thead><tbody id="stats"></tbody></table></div>
-<section class="mt-8 rounded-xl border border-slate-700 bg-slate-900 p-4"><div class="mb-2 flex justify-between"><label class="label">📋 Discord Ready Output</label><button id="copy" class="rounded bg-amber-500 px-3 py-1 text-xs font-bold text-slate-950">Copy Text</button></div><textarea id="output" readonly rows="5" class="w-full resize-none rounded border border-slate-800 bg-slate-950 p-3 font-mono text-sm text-emerald-400"></textarea></section>
-</main>
-<script>
-const rates={Lord:[65,50,10,55,50,45,35,25],Cavalier:[70,45,5,45,45,35,40,15],Knight:[80,55,0,35,15,25,65,5],Mage:[45,10,70,45,40,35,10,55],Myrmidon:[50,40,5,65,70,45,20,15],Thief:[45,35,5,50,65,60,15,25],Cleric:[40,5,65,35,35,50,10,65],Archer:[55,45,5,70,40,35,25,15]};
-const data=[['hp','HP (Health)',22,65],['str','Str (Strength)',7,50],['mag','Mag (Magic)',1,10],['skl','Skl (Skill/Dex)',8,55],['spd','Spd (Speed)',9,50],['lck','Lck (Luck)',7,45],['def','Def (Defense)',6,35],['res','Res (Resistance)',2,25]];let lv=1,stats={};
-const $=id=>document.getElementById(id);function init(){stats={};data.forEach(x=>stats[x[0]]=x[2]);$('stats').innerHTML=data.map(x=>`<tr class="border-b border-slate-700/50"><td class="p-3">${x[1]}</td><td class="p-3 text-center"><input id="b-${x[0]}" type="number" min="0" value="${x[2]}" class="num"></td><td class="p-3 text-center"><input id="g-${x[0]}" type="number" min="0" value="${x[3]}" class="num">%</td><td id="c-${x[0]}" class="p-3 text-center text-xl font-black">${x[2]}<span id="gain-${x[0]}" class="ml-1 block text-xs text-emerald-400 opacity-0"></span></td></tr>`).join('');data.forEach(x=>{ $('b-'+x[0]).onchange=()=>{x[2]=Math.max(0,+$('b-'+x[0]).value||0);if(lv===1){stats[x[0]]=x[2];$('c-'+x[0]).childNodes[0].nodeValue=x[2]}out([])} });out([])}
-function out(g){let n=($('title').value.trim()+' '+$('name').value.trim()).trim()||'Character';let st=data.map(x=>x[0].toUpperCase()+':'+stats[x[0]]).join(' | ');$('output').value=`**${n} reached Level ${lv}!**\n⚔️ **Class:** ${$('class').value}\n✨ **Gains:** ${g.length?g.join(', '):'No stats went up! (Empty Level)'}\n📊 **New Stats:** ${st}`}
-$('up').onclick=()=>{lv++;$('level').textContent=lv;let g=[];data.forEach(x=>{let r=+$('g-'+x[0]).value||0,a=Math.floor(r/100)+(Math.random()*100<r%100?1:0);if(a){stats[x[0]]+=a;$('c-'+x[0]).childNodes[0].nodeValue=stats[x[0]];let e=$('gain-'+x[0]);e.textContent='+'+a;e.style.opacity=1;$('c-'+x[0]).classList.add('flash');setTimeout(()=>{e.style.opacity=0;$('c-'+x[0]).classList.remove('flash')},900);g.push('+'+a+' '+x[0].toUpperCase())}});out(g)};
-$('apply').onclick=()=>{let r=rates[$('class').value];if(r)r.forEach((v,i)=>$('g-'+data[i][0]).value=v);out([])};$('reset').onclick=()=>{lv=1;$('level').textContent=1;init()};['title','name','class'].forEach(id=>$(id).oninput=()=>out([]));$('copy').onclick=async()=>{await navigator.clipboard.writeText($('output').value);$('copy').textContent='Copied!';setTimeout(()=>$('copy').textContent='Copy Text',1200)};$('portraitInput').onchange=e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader;r.onload=ev=>{$('portrait').innerHTML=`<img src="${ev.target.result}" class="h-full w-full object-cover">`;$('removePortrait').classList.remove('hidden')};r.readAsDataURL(f)};$('removePortrait').onclick=()=>{$('portrait').textContent='🧙';$('removePortrait').classList.add('hidden');$('portraitInput').value=''};init();
-</script>
-<style>.label{display:block;margin-bottom:.25rem;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8}.input{width:100%;border-radius:.25rem;border:1px solid #475569;background:#334155;padding:.5rem;color:white;outline:0}.input:focus,.num:focus{border-color:#fbbf24}.num{width:5rem;border-radius:.25rem;border:1px solid #475569;background:#334155;padding:.25rem;text-align:center;color:white;outline:0}</style>
-</body></html>
+  <main class="mx-auto max-w-6xl rounded-2xl border border-slate-700 bg-slate-800 p-6 shadow-2xl">
+    <header class="mb-6 border-b border-slate-700 pb-5 text-center">
+      <h1 class="text-3xl font-extrabold tracking-wide text-amber-400">🛡️ FE STAT GROWTH SIMULATOR</h1>
+      <p class="mt-2 text-sm text-slate-400">Customize your character, class, portrait, and simulate growths over time.</p>
+    </header>
+
+    <section class="mb-6 grid gap-6 rounded-xl border border-slate-700 bg-slate-900/50 p-5 md:grid-cols-[180px_1fr]">
+      <div class="flex flex-col items-center">
+        <div id="portrait" class="portrait-bg flex h-40 w-40 items-center justify-center overflow-hidden rounded-xl border-2 border-amber-500/60 text-5xl">🧙</div>
+        <label for="portraitInput" class="mt-3 cursor-pointer rounded-lg bg-slate-700 px-4 py-2 text-sm font-bold text-slate-200 transition hover:bg-slate-600">Upload Portrait</label>
+        <input id="portraitInput" type="file" accept="image/*" class="hidden" />
+        <button id="removePortrait" type="button" class="mt-2 hidden text-xs text-red-400 hover:text-red-300">Remove Portrait</button>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <label>
+          <span class="label">Title / Role</span>
+          <input id="title" type="text" value="Lord" class="input" />
+        </label>
+
+        <label>
+          <span class="label">Character Name</span>
+          <input id="name" type="text" value="Eve" class="input" />
+        </label>
+
+        <label>
+          <span class="label">Game Preset</span>
+          <select id="gameSelect" class="input">
+            <option value="generic">Generic</option>
+            <option value="fe7">FE7</option>
+            <option value="fe8">FE8</option>
+            <option value="fe9">FE9</option>
+            <option value="fe10">FE10</option>
+            <option value="fe13">FE13</option>
+            <option value="fe14">FE14</option>
+            <option value="fe16">FE16</option>
+          </select>
+        </label>
+
+        <label>
+          <span class="label">Class</span>
+          <select id="classSelect" class="input">
+            <option value="custom">Custom</option>
+            <option value="Lord">Lord</option>
+            <option value="Cavalier">Cavalier</option>
+            <option value="Knight">Knight</option>
+            <option value="Mage">Mage</option>
+            <option value="Myrmidon">Myrmidon</option>
+            <option value="Thief">Thief</option>
+            <option value="Cleric">Cleric</option>
+            <option value="Archer">Archer</option>
+          </select>
+        </label>
+
+        <div class="flex items-end">
+          <button id="applyClass" type="button" class="w-full rounded-lg bg-indigo-600 px-4 py-2 font-bold text-white transition hover:bg-indigo-500">Apply Class Growths</button>
+        </div>
+
+        <div class="flex items-end gap-2">
+          <button id="saveBuild" type="button" class="w-full rounded-lg bg-emerald-700 px-4 py-2 font-bold text-white transition hover:bg-emerald-600">Save Build</button>
+          <button id="loadBuild" type="button" class="w-full rounded-lg bg-slate-700 px-4 py-2 font-bold text-white transition hover:bg-slate-600">Load</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-700 bg-slate-900/50 p-4">
+      <div class="text-center">
+        <span class="label">Current Level</span>
+        <span id="level" class="text-4xl font-black text-amber-400">1</span>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <label class="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Levels</span>
+          <input id="levelsInput" type="number" min="1" value="1" class="num w-16 bg-slate-700 p-2 text-sm text-white" />
+        </label>
+
+        <button id="simulateLevels" type="button" class="rounded-lg bg-teal-600 px-4 py-2 font-bold text-white transition hover:bg-teal-500">Simulate Levels</button>
+        <button id="levelUp" type="button" class="rounded-lg bg-emerald-600 px-6 py-3 text-lg font-bold text-white shadow-md transition hover:bg-emerald-500 active:scale-95">✨ Level Up!</button>
+        <button id="reset" type="button" class="rounded-lg bg-slate-700 px-5 py-3 font-medium text-slate-200 transition hover:bg-slate-600">🔄 Reset</button>
+      </div>
+    </section>
+
+    <section class="overflow-x-auto">
+      <table class="w-full border-collapse text-left">
+        <thead>
+          <tr class="border-b border-slate-700 bg-slate-900/60 text-xs font-bold uppercase tracking-wider text-amber-400">
+            <th class="p-3">Stat</th>
+            <th class="p-3 text-center">Base</th>
+            <th class="p-3 text-center">Growth %</th>
+            <th class="rounded-t-lg bg-slate-950/60 p-3 text-center">Current</th>
+          </tr>
+        </thead>
+        <tbody id="stats"></tbody>
+      </table>
+    </section>
+
+    <section class="mt-8 grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+      <div class="rounded-xl border border-slate-700 bg-slate-900 p-4">
+        <div class="mb-2 flex items-center justify-between gap-3">
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-400">📋 Discord Ready Output</label>
+          <button id="copy" type="button" class="rounded bg-amber-500 px-3 py-1 text-xs font-bold text-slate-950 transition hover:bg-amber-400">Copy Text</button>
+        </div>
+        <textarea id="output" readonly rows="6" class="w-full resize-none rounded border border-slate-800 bg-slate-950 p-3 font-mono text-sm text-emerald-400 outline-none"></textarea>
+      </div>
+
+      <div class="rounded-xl border border-slate-700 bg-slate-900 p-4">
+        <h2 class="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">Level History</h2>
+        <div id="history" class="space-y-2 text-sm text-slate-300"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const statConfig = [
+      { id: 'hp', name: 'HP (Health)', base: 22, growth: 65 },
+      { id: 'str', name: 'Str (Strength)', base: 7, growth: 50 },
+      { id: 'mag', name: 'Mag (Magic)', base: 1, growth: 10 },
+      { id: 'skl', name: 'Skl (Skill/Dex)', base: 8, growth: 55 },
+      { id: 'spd', name: 'Spd (Speed)', base: 9, growth: 50 },
+      { id: 'lck', name: 'Lck (Luck)', base: 7, growth: 45 },
+      { id: 'def', name: 'Def (Defense)', base: 6, growth: 35 },
+      { id: 'res', name: 'Res (Resistance)', base: 2, growth: 25 }
+    ];
+
+    const classGrowths = {
+      generic: {
+        Lord: { hp: 65, str: 50, mag: 10, skl: 55, spd: 50, lck: 45, def: 35, res: 25 },
+        Cavalier: { hp: 70, str: 45, mag: 5, skl: 45, spd: 45, lck: 35, def: 40, res: 15 },
+        Knight: { hp: 80, str: 55, mag: 0, skl: 35, spd: 15, lck: 25, def: 65, res: 5 },
+        Mage: { hp: 45, str: 10, mag: 70, skl: 45, spd: 40, lck: 35, def: 10, res: 55 },
+        Myrmidon: { hp: 50, str: 40, mag: 5, skl: 65, spd: 70, lck: 45, def: 20, res: 15 },
+        Thief: { hp: 45, str: 35, mag: 5, skl: 50, spd: 65, lck: 60, def: 15, res: 25 },
+        Cleric: { hp: 40, str: 5, mag: 65, skl: 35, spd: 35, lck: 50, def: 10, res: 65 },
+        Archer: { hp: 55, str: 45, mag: 5, skl: 70, spd: 40, lck: 35, def: 25, res: 15 }
+      },
+      fe7: {
+        Lord: { hp: 70, str: 55, mag: 15, skl: 60, spd: 55, lck: 50, def: 40, res: 30 },
+        Cavalier: { hp: 75, str: 50, mag: 10, skl: 50, spd: 50, lck: 35, def: 45, res: 20 },
+        Knight: { hp: 85, str: 60, mag: 0, skl: 40, spd: 20, lck: 25, def: 70, res: 10 },
+        Mage: { hp: 50, str: 15, mag: 75, skl: 50, spd: 45, lck: 35, def: 20, res: 60 },
+        Myrmidon: { hp: 55, str: 45, mag: 10, skl: 70, spd: 75, lck: 50, def: 25, res: 20 },
+        Thief: { hp: 50, str: 40, mag: 10, skl: 55, spd: 70, lck: 65, def: 20, res: 30 },
+        Cleric: { hp: 45, str: 10, mag: 70, skl: 40, spd: 40, lck: 55, def: 15, res: 70 },
+        Archer: { hp: 60, str: 50, mag: 10, skl: 75, spd: 45, lck: 40, def: 30, res: 20 }
+      },
+      fe8: {
+        Lord: { hp: 70, str: 50, mag: 10, skl: 55, spd: 50, lck: 55, def: 35, res: 25 },
+        Cavalier: { hp: 75, str: 50, mag: 5, skl: 50, spd: 50, lck: 35, def: 45, res: 20 },
+        Knight: { hp: 80, str: 60, mag: 0, skl: 35, spd: 20, lck: 30, def: 65, res: 10 },
+        Mage: { hp: 50, str: 10, mag: 75, skl: 50, spd: 40, lck: 35, def: 15, res: 60 },
+        Myrmidon: { hp: 50, str: 40, mag: 5, skl: 65, spd: 70, lck: 50, def: 20, res: 15 },
+        Thief: { hp: 45, str: 35, mag: 10, skl: 55, spd: 70, lck: 70, def: 15, res: 30 },
+        Cleric: { hp: 45, str: 10, mag: 70, skl: 35, spd: 35, lck: 55, def: 15, res: 70 },
+        Archer: { hp: 55, str: 45, mag: 10, skl: 70, spd: 45, lck: 40, def: 25, res: 20 }
+      },
+      fe9: {
+        Lord: { hp: 65, str: 50, mag: 15, skl: 60, spd: 55, lck: 50, def: 35, res: 25 },
+        Cavalier: { hp: 70, str: 45, mag: 10, skl: 50, spd: 50, lck: 35, def: 45, res: 20 },
+        Knight: { hp: 80, str: 60, mag: 0, skl: 35, spd: 20, lck: 25, def: 65, res: 10 },
+        Mage: { hp: 45, str: 10, mag: 75, skl: 50, spd: 45, lck: 35, def: 15, res: 55 },
+        Myrmidon: { hp: 50, str: 40, mag: 5, skl: 70, spd: 70, lck: 45, def: 20, res: 15 },
+        Thief: { hp: 45, str: 35, mag: 5, skl: 55, spd: 75, lck: 60, def: 15, res: 25 },
+        Cleric: { hp: 45, str: 10, mag: 70, skl: 40, spd: 35, lck: 50, def: 15, res: 70 },
+        Archer: { hp: 55, str: 50, mag: 5, skl: 70, spd: 45, lck: 40, def: 25, res: 20 }
+      },
+      fe10: {
+        Lord: { hp: 65, str: 50, mag: 15, skl: 60, spd: 50, lck: 50, def: 35, res: 25 },
+        Cavalier: { hp: 70, str: 50, mag: 5, skl: 45, spd: 45, lck: 40, def: 45, res: 20 },
+        Knight: { hp: 80, str: 60, mag: 0, skl: 35, spd: 20, lck: 20, def: 65, res: 10 },
+        Mage: { hp: 45, str: 15, mag: 80, skl: 45, spd: 45, lck: 40, def: 15, res: 50 },
+        Myrmidon: { hp: 50, str: 40, mag: 5, skl: 70, spd: 70, lck: 50, def: 20, res: 15 },
+        Thief: { hp: 45, str: 35, mag: 5, skl: 55, spd: 75, lck: 60, def: 20, res: 25 },
+        Cleric: { hp: 45, str: 10, mag: 70, skl: 35, spd: 35, lck: 50, def: 15, res: 70 },
+        Archer: { hp: 55, str: 50, mag: 5, skl: 70, spd: 45, lck: 40, def: 25, res: 20 }
+      },
+      fe13: {
+        Lord: { hp: 65, str: 50, mag: 15, skl: 55, spd: 50, lck: 55, def: 35, res: 25 },
+        Cavalier: { hp: 70, str: 45, mag: 10, skl: 45, spd: 45, lck: 35, def: 40, res: 15 },
+        Knight: { hp: 80, str: 55, mag: 0, skl: 35, spd: 20, lck: 25, def: 65, res: 10 },
+        Mage: { hp: 45, str: 10, mag: 75, skl: 45, spd: 45, lck: 35, def: 15, res: 55 },
+        Myrmidon: { hp: 50, str: 40, mag: 5, skl: 70, spd: 70, lck: 50, def: 20, res: 20 },
+        Thief: { hp: 45, str: 35, mag: 5, skl: 55, spd: 75, lck: 60, def: 20, res: 25 },
+        Cleric: { hp: 45, str: 10, mag: 70, skl: 35, spd: 35, lck: 50, def: 15, res: 70 },
+        Archer: { hp: 55, str: 45, mag: 5, skl: 70, spd: 45, lck: 40, def: 25, res: 20 }
+      },
+      fe14: {
+        Lord: { hp: 65, str: 50, mag: 15, skl: 55, spd: 50, lck: 50, def: 35, res: 25 },
+        Cavalier: { hp: 70, str: 50, mag: 10, skl: 45, spd: 45, lck: 35, def: 45, res: 15 },
+        Knight: { hp: 80, str: 60, mag: 0, skl: 35, spd: 20, lck: 20, def: 70, res: 10 },
+        Mage: { hp: 45, str: 10, mag: 80, skl: 45, spd: 45, lck: 35, def: 15, res: 60 },
+        Myrmidon: { hp: 50, str: 40, mag: 5, skl: 70, spd: 75, lck: 50, def: 20, res: 15 },
+        Thief: { hp: 45, str: 35, mag: 5, skl: 55, spd: 75, lck: 60, def: 20, res: 25 },
+        Cleric: { hp: 45, str: 10, mag: 70, skl: 35, spd: 35, lck: 55, def: 15, res: 70 },
+        Archer: { hp: 55, str: 45, mag: 5, skl: 70, spd: 45, lck: 40, def: 25, res: 20 }
+      },
+      fe16: {
+        Lord: { hp: 70, str: 55, mag: 15, skl: 60, spd: 55, lck: 50, def: 35, res: 30 },
+        Cavalier: { hp: 75, str: 50, mag: 10, skl: 50, spd: 50, lck: 35, def: 45, res: 20 },
+        Knight: { hp: 80, str: 60, mag: 0, skl: 35, spd: 20, lck: 25, def: 70, res: 10 },
+        Mage: { hp: 50, str: 10, mag: 80, skl: 50, spd: 45, lck: 35, def: 20, res: 60 },
+        Myrmidon: { hp: 50, str: 40, mag: 5, skl: 70, spd: 75, lck: 50, def: 20, res: 20 },
+        Thief: { hp: 45, str: 35, mag: 5, skl: 60, spd: 80, lck: 60, def: 20, res: 25 },
+        Cleric: { hp: 45, str: 10, mag: 75, skl: 35, spd: 35, lck: 55, def: 15, res: 75 },
+        Archer: { hp: 55, str: 45, mag: 5, skl: 75, spd: 45, lck: 40, def: 25, res: 20 }
+      }
+    };
+
+    let currentLevel = 1;
+    let currentStats = {};
+    let levelHistory = [];
+
+    const $ = (id) => document.getElementById(id);
+
+    function buildStats() {
+      currentStats = {};
+      statConfig.forEach((stat) => {
+        currentStats[stat.id] = stat.base;
+      });
+    }
+
+    function renderStats() {
+      const tbody = $('stats');
+      tbody.innerHTML = '';
+
+      statConfig.forEach((stat) => {
+        const row = document.createElement('tr');
+        row.className = 'border-b border-slate-700/50 hover:bg-slate-700/30';
+        row.innerHTML = `
+          <td class="p-3 font-medium text-slate-200">${stat.name}</td>
+          <td class="p-3 text-center"><input id="base-${stat.id}" type="number" min="0" value="${stat.base}" class="num" /></td>
+          <td class="p-3 text-center"><div class="flex items-center justify-center gap-1"><input id="growth-${stat.id}" type="number" min="0" value="${stat.growth}" class="num" /><span>%</span></div></td>
+          <td id="current-box-${stat.id}" class="bg-slate-950/30 p-3 text-center text-xl font-black text-white">
+            <span id="current-${stat.id}">${currentStats[stat.id]}</span>
+            <span id="gain-${stat.id}" class="ml-1 block h-0 overflow-visible text-xs font-bold text-emerald-400 opacity-0 transition-all"></span>
+          </td>
+        `;
+
+        tbody.appendChild(row);
+
+        $(`base-${stat.id}`).addEventListener('change', (event) => {
+          const val = Math.max(0, Number(event.target.value) || 0);
+          stat.base = val;
+          if (currentLevel === 1) {
+            currentStats[stat.id] = val;
+            $(`current-${stat.id}`).textContent = val;
+            updateOutput([]);
+          }
+        });
+
+        $(`growth-${stat.id}`).addEventListener('change', (event) => {
+          const val = Math.max(0, Number(event.target.value) || 0);
+          stat.growth = val;
+          $('classSelect').value = 'custom';
+          updateOutput([]);
+        });
+      });
+    }
+
+    function getDisplayName() {
+      const title = $('title').value.trim();
+      const name = $('name').value.trim();
+      if (title && name) return `${title} ${name}`;
+      return title || name || 'Character';
+    }
+
+    function updateOutput(gains) {
+      const displayName = getDisplayName();
+      const selectedClass = $('classSelect').value === 'custom' ? 'Custom' : $('classSelect').value;
+      const gainsText = gains.length > 0 ? gains.join(', ') : 'No stats went up! (Empty Level)';
+      const statsText = statConfig.map((stat) => `${stat.id.toUpperCase()}:${currentStats[stat.id]}`).join(' | ');
+
+      $('output').value = `**${displayName} reached Level ${currentLevel}!**\n⚔️ **Class:** ${selectedClass}\n✨ **Gains:** ${gainsText}\n📊 **New Stats:** ${statsText}`;
+    }
+
+    function renderHistory() {
+      const historyBox = $('history');
+      if (levelHistory.length === 0) {
+        historyBox.innerHTML = '<p class="text-slate-500">No levels simulated yet.</p>';
+        return;
+      }
+
+      historyBox.innerHTML = levelHistory
+        .map((entry) => `
+          <div class="rounded-lg border border-slate-700 bg-slate-800 p-2">
+            <div class="mb-1 font-bold text-amber-300">Level ${entry.level}</div>
+            <div class="text-xs text-slate-300">${entry.gains.length ? entry.gains.join(', ') : 'No gains'}</div>
+          </div>
+        `)
+        .join('');
+    }
+
+    function applyClassGrowths() {
+      const selectedGame = $('gameSelect').value;
+      const selectedClass = $('classSelect').value;
+      if (selectedClass === 'custom') {
+        updateOutput([]);
+        return;
+      }
+
+      const preset = classGrowths[selectedGame]?.[selectedClass];
+      if (!preset) {
+        return;
+      }
+
+      statConfig.forEach((stat) => {
+        stat.growth = preset[stat.id];
+        const input = $(`growth-${stat.id}`);
+        if (input) input.value = stat.growth;
+      });
+
+      updateOutput([]);
+    }
+
+    function performLevelRoll() {
+      const gains = [];
+
+      statConfig.forEach((stat) => {
+        const growthRate = Number($(`growth-${stat.id}`).value) || 0;
+        let gain = Math.floor(growthRate / 100);
+        if (Math.random() * 100 < (growthRate % 100)) gain += 1;
+
+        if (gain <= 0) return;
+
+        currentStats[stat.id] += gain;
+        gains.push(`+${gain} ${stat.id.toUpperCase()}`);
+
+        const currentEl = $(`current-${stat.id}`);
+        const gainEl = $(`gain-${stat.id}`);
+        const cell = $(`current-box-${stat.id}`);
+
+        currentEl.textContent = currentStats[stat.id];
+        gainEl.textContent = `+${gain}`;
+        gainEl.style.opacity = '1';
+
+        cell.classList.remove('flash');
+        void cell.offsetWidth;
+        cell.classList.add('flash');
+
+        setTimeout(() => {
+          gainEl.style.opacity = '0';
+          cell.classList.remove('flash');
+        }, 900);
+      });
+
+      return gains;
+    }
+
+    function levelUpOnce() {
+      currentLevel += 1;
+      $('level').textContent = currentLevel;
+      const gains = performLevelRoll();
+      levelHistory.push({ level: currentLevel, gains });
+      renderHistory();
+      updateOutput(gains);
+    }
+
+    function simulateLevels(count) {
+      const amount = Math.max(1, Number(count) || 1);
+      for (let i = 0; i < amount; i += 1) {
+        levelUpOnce();
+      }
+    }
+
+    function resetSim() {
+      currentLevel = 1;
+      levelHistory = [];
+      $('level').textContent = currentLevel;
+      buildStats();
+      renderStats();
+      renderHistory();
+      updateOutput([]);
+    }
+
+    function saveBuild() {
+      const state = {
+        title: $('title').value,
+        name: $('name').value,
+        gameSelect: $('gameSelect').value,
+        classSelect: $('classSelect').value,
+        currentLevel,
+        currentStats,
+        statConfig: statConfig.map((stat) => ({ ...stat }))
+      };
+      localStorage.setItem('fe-sim-build', JSON.stringify(state));
+      alert('Build saved to this browser.');
+    }
+
+    function loadBuild() {
+      const saved = localStorage.getItem('fe-sim-build');
+      if (!saved) {
+        alert('No saved build found.');
+        return;
+      }
+
+      try {
+        const state = JSON.parse(saved);
+        $('title').value = state.title || 'Lord';
+        $('name').value = state.name || 'Eve';
+        $('gameSelect').value = state.gameSelect || 'generic';
+        $('classSelect').value = state.classSelect || 'custom';
+        currentLevel = state.currentLevel || 1;
+        $('level').textContent = currentLevel;
+
+        state.statConfig.forEach((savedStat) => {
+          const stat = statConfig.find((entry) => entry.id === savedStat.id);
+          if (!stat) return;
+          stat.base = savedStat.base;
+          stat.growth = savedStat.growth;
+        });
+
+        currentStats = state.currentStats || {};
+        statConfig.forEach((stat) => {
+          const savedValue = currentStats[stat.id];
+          if (typeof savedValue === 'number') {
+            currentStats[stat.id] = savedValue;
+          } else {
+            currentStats[stat.id] = stat.base;
+          }
+          const currentEl = $(`current-${stat.id}`);
+          if (currentEl) currentEl.textContent = currentStats[stat.id];
+          const growthInput = $(`growth-${stat.id}`);
+          if (growthInput) growthInput.value = stat.growth;
+        });
+
+        renderHistory();
+        updateOutput([]);
+      } catch {
+        alert('Saved build could not be loaded.');
+      }
+    }
+
+    async function copyToClipboard() {
+      const value = $('output').value;
+      try {
+        await navigator.clipboard.writeText(value);
+        $('copy').textContent = 'Copied!';
+      } catch {
+        $('output').select();
+        document.execCommand('copy');
+        $('copy').textContent = 'Copied!';
+      }
+
+      setTimeout(() => {
+        $('copy').textContent = 'Copy Text';
+      }, 1200);
+    }
+
+    function handlePortraitUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file.');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        $('portrait').innerHTML = `<img src="${evt.target.result}" class="h-full w-full object-cover" alt="Character Portrait" />`;
+        $('removePortrait').classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearPortrait() {
+      $('portrait').innerHTML = '🧙';
+      $('removePortrait').classList.add('hidden');
+      $('portraitInput').value = '';
+    }
+
+    $('levelUp').addEventListener('click', levelUpOnce);
+    $('simulateLevels').addEventListener('click', () => {
+      const count = Number($('levelsInput').value) || 1;
+      simulateLevels(count);
+    });
+    $('reset').addEventListener('click', resetSim);
+    $('applyClass').addEventListener('click', applyClassGrowths);
+    $('copy').addEventListener('click', copyToClipboard);
+    $('saveBuild').addEventListener('click', saveBuild);
+    $('loadBuild').addEventListener('click', loadBuild);
+    $('portraitInput').addEventListener('change', handlePortraitUpload);
+    $('removePortrait').addEventListener('click', clearPortrait);
+    $('title').addEventListener('input', () => updateOutput([]));
+    $('name').addEventListener('input', () => updateOutput([]));
+    $('gameSelect').addEventListener('change', () => {
+      if ($('classSelect').value !== 'custom') {
+        applyClassGrowths();
+      }
+    });
+    $('classSelect').addEventListener('change', () => {
+      if ($('classSelect').value !== 'custom') {
+        applyClassGrowths();
+      } else {
+        updateOutput([]);
+      }
+    });
+
+    buildStats();
+    renderStats();
+    renderHistory();
+    updateOutput([]);
+  </script>
+</body>
+</html>
